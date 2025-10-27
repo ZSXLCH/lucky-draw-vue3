@@ -57,16 +57,20 @@ const list = computed(() => store.list);
         margin-bottom: 10px;
       }
       .content-lines {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* 居中每一行 */
         .line {
           display: flex;
           align-items: center;
-          padding: 6px 8px;
+          justify-content: center; /* 三列居中排列 */
+          padding: 10px 12px;
           border-bottom: 1px solid #eee;
-          font-size: 14px;
+          font-size: 20px; /* 字体调大 */
         }
-        .line .seq { width: 80px; color: #666; }
-        .line .type { width: 120px; color: #333; }
-        .line .name { flex: 1; color: #000; }
+        .line .seq { width: 100px; color: #333; text-align: center; font-weight: bold; }
+        .line .type { width: 160px; color: #333; text-align: center; }
+        .line .name { flex: 0 0 280px; color: #000; text-align: center; font-weight: bold; }
       }
     }
   }

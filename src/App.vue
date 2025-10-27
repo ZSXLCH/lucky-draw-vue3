@@ -468,9 +468,10 @@ const toggle = (form) => {
   .result-line {
     display: flex;
     align-items: center;
-    padding: 8px 10px;
-    margin-bottom: 5px;
-    background-color: rgba(255, 255, 255, 0.9);
+    justify-content: center; /* 居中排列三个列 */
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background-color: rgba(255, 255, 255, 0.95);
     border-radius: 4px;
     cursor: pointer;
     
@@ -479,21 +480,26 @@ const toggle = (form) => {
     }
     
     .seq {
-      width: 80px;
-      color: #666;
+      width: 100px;
+      color: #333;
       font-weight: bold;
+      text-align: center;
+      font-size: 20px;
     }
     
     .type {
-      width: 120px;
+      width: 160px;
       color: #333;
+      text-align: center;
+      font-size: 20px;
     }
     
     .name {
-      flex: 1;
+      flex: 0 0 280px;
       color: #000;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: bold;
+      text-align: center;
     }
   }
 }

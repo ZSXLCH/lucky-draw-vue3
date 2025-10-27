@@ -2,7 +2,7 @@
   <el-dialog
     v-model="dialogVisible"
     :append-to-body="true"
-    width="560px"
+    width="640px"
     class="c-LotteryConfig"
   >
     <template #header>
@@ -321,7 +321,7 @@ const stopDrag = (event) => {
   margin-bottom: 10px;
   position: relative;
   padding: 10px;
-  padding-right: 40px; /* 给右侧图标留出空间，避免重叠 */
+  padding-right: 80px; /* 预留更大右侧空间，确保拖动图标最右且不重叠 */
   border-radius: 4px;
   border: 1px solid #ebeef5;
   background-color: #f5f7fa;
@@ -335,9 +335,13 @@ const stopDrag = (event) => {
   }
   
   .prize-label {
-    min-width: 100px;
+    min-width: 120px;
+    max-width: 220px;
     margin-right: 10px;
     font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .prize-count-label {
@@ -346,20 +350,24 @@ const stopDrag = (event) => {
   }
   
   .el-input {
-    width: 120px;
+    width: 140px;
     margin-right: 10px;
+    flex-shrink: 0;
   }
   
   .prize-actions {
     display: flex;
     gap: 5px;
     margin-left: auto; /* 动作区靠右 */
+    margin-right: 60px; /* 与拖动图标保持更大间距 */
     flex-shrink: 0; /* 防止被压缩换行 */
+    position: relative;
+    z-index: 1; /* 与拖动图标叠放顺序分离 */
   }
   
   .drag-handle {
     position: absolute;
-    right: 8px;
+    right: 0; /* 固定到最右边 */
     top: 50%;
     transform: translateY(-50%);
     cursor: move;
@@ -367,6 +375,8 @@ const stopDrag = (event) => {
     transition: opacity 0.3s;
     font-size: 18px;
     color: #409eff;
+    z-index: 0;
+    padding-right: 6px;
   }
 }
 </style>
