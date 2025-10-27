@@ -28,41 +28,12 @@
     <transition name="bounce">
       <div id="resbox" v-show="showRes">
         <p @click="showRes = false">{{ categoryName }}抽奖结果：</p>
-        <div class="container">
-          <span
-            v-for="item in resArr"
-            :key="item"
-            class="itemres"
-            :style="resCardStyle"
-            :data-id="item"
-            @click="showRes = false"
-            :class="{
-              numberOver:
-                !!photos.find((d) => d.id === item) ||
-                !!list.find((d) => d.key === item),
-            }"
-          >
-            <span class="cont" v-if="!photos.find((d) => d.id === item)">
-              <span
-                v-if="!!list.find((d) => d.key === item)"
-                :style="{
-                  fontSize: '40px',
-                }"
-              >
-                {{ list.find((d) => d.key === item).name }}
-              </span>
-              <span v-else>
-                {{ item }}
-              </span>
-            </span>
-            <img
-              v-if="photos.find((d) => d.id === item)"
-              :src="photos.find((d) => d.id === item).value"
-              alt="photo"
-              :width="160"
-              :height="160"
-            />
-          </span>
+        <div class="result-lines">
+          <div class="result-line" v-for="item in resArr" :key="item" @click="showRes = false">
+            <span class="seq">{{ item }}</span>
+            <span class="type">{{ (list.find((d) => d.key === item) || {}).type || '-' }}</span>
+            <span class="name">{{ (list.find((d) => d.key === item) || {}).name || item }}</span>
+          </div>
         </div>
       </div>
     </transition>
@@ -483,6 +454,46 @@ const toggle = (form) => {
       left: 0;
       font-size: 14px;
       z-index: 1;
+    }
+  }
+}
+</style>
+
+<style lang="scss">
+#resbox {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  
+  .result-line {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    margin-bottom: 5px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 1);
+    }
+    
+    .seq {
+      width: 80px;
+      color: #666;
+      font-weight: bold;
+    }
+    
+    .type {
+      width: 120px;
+      color: #333;
+    }
+    
+    .name {
+      flex: 1;
+      color: #000;
+      font-size: 18px;
+      font-weight: bold;
     }
   }
 }

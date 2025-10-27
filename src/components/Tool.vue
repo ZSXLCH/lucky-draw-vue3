@@ -81,23 +81,32 @@
       :append-to-body="true"
       v-model="showImport"
       class="import-dialog"
-      width="400px"
+      width="500px"
     >
       <el-input
         type="textarea"
-        :rows="10"
-        placeholder="请输入对应的号码和名单(可直接从excel复制)，格式(号码 名字)，导入的名单将代替号码显示在抽奖中。如：
-1 张三
-2 李四
-3 王五
-				"
+        :rows="8"
+        placeholder="请输入三列数据(可直接从Excel复制)，格式为：序号 类型 姓名。示例：
+        1 技术部 张三
+        2 市场部 李四
+        3 行政 王五"
         v-model="listStr"
       ></el-input>
       <div class="footer">
-        <el-button size="small" type="primary" @click="transformList"
-          >确定</el-button
-        >
-        <el-button size="small" @click="showImport = false">取消</el-button>
+        <div class="button-group">
+          <el-button size="small" @click="downloadSampleExcel">示例文件下载</el-button>
+          <el-upload
+            :show-file-list="false"
+            :auto-upload="false"
+            accept=".xlsx,.xls"
+            :on-change="handleUploadChange"
+            class="inline-upload"
+          >
+            <el-button size="small">导入Excel</el-button>
+          </el-upload>
+          <el-button size="small" type="primary" @click="transformList">确定</el-button>
+          <el-button size="small" @click="showImport = false">取消</el-button>
+        </div>
       </div>
     </el-dialog>
     <Importphoto
@@ -144,7 +153,9 @@ import {
 } from '@/helper/index';
 import Importphoto from './Importphoto.vue';
 import { database, DB_STORE_NAME } from '@/helper/db';
-
+import * as XLSX from 'xlsx';
+// 使用 Pinia store
+const store = useLuckyStore();
 // 定义属性和事件
 const props = defineProps({
   running: Boolean,
@@ -152,9 +163,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['toggle', 'resetConfig', 'getPhoto']);
-
-// 使用 Pinia store
-const store = useLuckyStore();
 
 // 响应式数据
 const showSetwat = ref(false);
@@ -308,13 +316,15 @@ const transformList = () => {
   const rows = listStr.value.split('\n');
   if (rows && rows.length > 0) {
     rows.forEach(item => {
-      const rowList = item.split(/\t|\s/);
-      if (rowList.length >= 2) {
-        const key = Number(rowList[0].trim());
-        const name = rowList[1].trim();
+      const cols = item.trim().split(/\t|,|\s+/);
+      if (cols.length >= 3) {
+        const key = Number(cols[0].trim());
+        const type = (cols[1] || '').trim();
+        const name = cols.slice(2).join(' ').trim();
         key &&
           list.push({
             key,
+            type,
             name
           });
       }
@@ -330,6 +340,79 @@ const transformList = () => {
   nextTick(() => {
     emit('resetConfig');
   });
+};
+
+// Excel 导入：处理文件选择
+const handleUploadChange = (file) => {
+  const raw = file && file.raw ? file.raw : null;
+  if (!raw) {
+    ElMessage.error('未获取到文件');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const wsName = wb.SheetNames[0];
+      const ws = wb.Sheets[wsName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      if (!rows || rows.length < 2) {
+        ElMessage.error('表格无有效数据');
+        return;
+      }
+      const header = rows[0].map(String);
+      const expect = ['序号', '类型', '姓名'];
+      const isHeaderOk =
+        header.length >= 3 &&
+        header[0].trim() === expect[0] &&
+        header[1].trim() === expect[1] &&
+        header[2].trim() === expect[2];
+      if (!isHeaderOk) {
+        ElMessage.error('表头需为：序号 类型 姓名');
+        return;
+      }
+      
+      // 将Excel内容转换为文本显示在输入框中
+      let importText = '';
+      rows.slice(1).forEach((row) => {
+        if (!row || row.length === 0) return;
+        const key = String(row[0] ?? '').trim();
+        const type = String(row[1] ?? '').trim();
+        const name = String(row[2] ?? '').trim();
+        if (key && name) {
+          importText += `${key} ${type} ${name}\n`;
+        }
+      });
+      
+      if (!importText) {
+        ElMessage.error('没有可导入的数据');
+        return;
+      }
+      
+      // 更新输入框内容而不是直接导入
+      listStr.value = importText;
+      ElMessage.success('Excel解析成功，请检查内容并点击"确定"导入');
+    } catch (err) {
+      ElMessage.error('解析Excel失败');
+      console.error(err);
+    }
+  };
+  reader.onerror = () => ElMessage.error('读取文件失败');
+  reader.readAsArrayBuffer(raw);
+};
+
+// 示例Excel下载
+const downloadSampleExcel = () => {
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['序号', '类型', '姓名'],
+    [1, '技术部', '张三'],
+    [2, '市场部', '李四']
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, '示例');
+  XLSX.writeFile(wb, '示例导入文件.xlsx');
 };
 </script>
 
@@ -351,9 +434,36 @@ const transformList = () => {
   }
 }
 
-
-
-/* 修改为全局样式 */
+.tool {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+.tool-item {
+  margin: 5px;
+}
+.footer {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+}
+.button-group {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 10px;
+  align-items: center;
+}
+.inline-upload {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+.import-dialog :deep(.el-dialog__body) {
+  padding: 20px;
+}
 </style>
 
 <!-- 添加全局样式 -->

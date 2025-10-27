@@ -8,33 +8,11 @@
     <div class="result-container">
       <div v-for="(item, key) in result" :key="key" class="result-item">
         <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
-        <div class="content">
-          <div
-            v-for="(res, i) in item"
-            :key="i"
-            class="item"
-            :class="{
-              numberOver:
-                !!photos.find((d) => d.id === res) ||
-                !!list.find((d) => d.key === res),
-            }"
-            :data-id="res"
-          >
-            <span v-if="!photos.find((d) => d.id === res)">
-              <span v-if="!!list.find((d) => d.key === res)">
-                {{ list.find((d) => d.key === res).name }}
-              </span>
-              <span v-else>
-                {{ res }}
-              </span>
-            </span>
-            <img
-              v-if="photos.find((d) => d.id === res)"
-              :src="photos.find((d) => d.id === res).value"
-              alt="photo"
-              :width="80"
-              :height="80"
-            />
+        <div class="content-lines">
+          <div class="line" v-for="(res, i) in item" :key="i">
+            <span class="seq">{{ res }}</span>
+            <span class="type">{{ (list.find((d) => d.key === res) || {}).type || '-' }}</span>
+            <span class="name">{{ (list.find((d) => d.key === res) || {}).name || res }}</span>
           </div>
         </div>
       </div>
@@ -64,7 +42,6 @@ const store = useLuckyStore();
 // 计算属性
 const result = computed(() => store.result);
 const list = computed(() => store.list);
-const photos = computed(() => store.photos);
 </script>
 
 <style lang="scss" scoped>
@@ -79,36 +56,17 @@ const photos = computed(() => store.photos);
         font-weight: bold;
         margin-bottom: 10px;
       }
-      .content {
-        display: flex;
-        flex-wrap: wrap;
-        .item {
-          width: 80px;
-          height: 80px;
-          line-height: 80px;
-          text-align: center;
-          background-color: #fff;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          margin-right: 10px;
-          margin-bottom: 10px;
-          position: relative;
+      .content-lines {
+        .line {
           display: flex;
           align-items: center;
-          justify-content: center;
-          &.numberOver::before {
-            content: attr(data-id);
-            width: 20px;
-            height: 16px;
-            line-height: 16px;
-            background-color: #fff;
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            font-size: 12px;
-            z-index: 1;
-          }
+          padding: 6px 8px;
+          border-bottom: 1px solid #eee;
+          font-size: 14px;
         }
+        .line .seq { width: 80px; color: #666; }
+        .line .type { width: 120px; color: #333; }
+        .line .name { flex: 1; color: #000; }
       }
     }
   }

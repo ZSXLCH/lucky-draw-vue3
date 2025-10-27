@@ -69,8 +69,15 @@ export const useLuckyStore = defineStore('lucky', {
         const arrIndex = arr.findIndex(data => data.key === item.key);
         if (arrIndex > -1) {
           arr[arrIndex].name = item.name;
+          if (item.type !== undefined) {
+            arr[arrIndex].type = item.type;
+          }
         } else {
-          arr.push(item);
+          arr.push({
+            key: item.key,
+            name: item.name,
+            type: item.type
+          });
         }
       });
       this.list = arr;
