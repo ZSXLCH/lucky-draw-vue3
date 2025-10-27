@@ -87,11 +87,7 @@
       :closeRes="closeRes"
     />
     <Result v-model:visible="showResult"></Result>
-
-    <span class="copy-right">
-      Copyright©feiye
-    </span>
-
+    
     <audio
       id="audiobg"
       preload="auto"

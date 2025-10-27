@@ -4,7 +4,7 @@ import { setData, resultField, newLotteryField, listField } from '@/helper/index
 export const useLuckyStore = defineStore('lucky', {
   state: () => ({
     config: {
-      name: '年会抽奖',
+      name: '抽奖',
       number: 70,
       firstPrize: 1
     },
@@ -19,7 +19,7 @@ export const useLuckyStore = defineStore('lucky', {
   actions: {
     setClearConfig() {
       this.config = {
-        name: '年会抽奖',
+        name: '抽奖',
         number: 70,
         firstPrize: 1
       };
@@ -38,7 +38,7 @@ export const useLuckyStore = defineStore('lucky', {
     },
     setClearStore() {
       this.config = {
-        name: '年会抽奖',
+        name: '抽奖',
         number: 70,
         firstPrize: 1
       };

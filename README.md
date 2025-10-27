@@ -1,4 +1,4 @@
-## 年会抽奖
+## 抽奖
 
 [演示地址](https://cunzaizhuyi.github.io/lucky-draw-vue3/index.html#/)
 
