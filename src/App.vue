@@ -411,7 +411,7 @@ const toggle = (form) => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 1280px;
+  width: 980px;
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   p {
@@ -470,8 +470,8 @@ const toggle = (form) => {
     display: flex;
     align-items: center;
     justify-content: center; /* 居中排列三个列 */
-    padding: 10px 12px;
-    margin-bottom: 6px;
+    padding: 8px 10px; /* 减少每行内边距 */
+    margin-bottom: 4px; /* 减少行间距 */
     background-color: rgba(255, 255, 255, 0.95);
     border-radius: 4px;
     cursor: pointer;
@@ -481,24 +481,24 @@ const toggle = (form) => {
     }
     
     .seq {
-      width: 100px;
+      width: 80px; /* 缩小序号列宽 */
       color: #333;
       font-weight: bold;
       text-align: center;
-      font-size: 20px;
+      font-size: 18px; /* 略微缩小字体以匹配更窄布局 */
     }
     
     .type {
-      width: 160px;
+      width: 120px; /* 缩小类型列宽 */
       color: #333;
       text-align: center;
-      font-size: 20px;
+      font-size: 18px;
     }
     
     .name {
-      flex: 0 0 280px;
+      flex: 0 0 220px; /* 缩小姓名列宽 */
       color: #000;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: bold;
       text-align: center;
     }
