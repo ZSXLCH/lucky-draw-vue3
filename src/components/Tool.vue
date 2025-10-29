@@ -20,7 +20,11 @@
     >
       <el-form ref="formRef" :model="form" label-width="80px" size="small">
         <el-form-item label="抽取奖项">
-          <el-select v-model="form.category" placeholder="请选取本次抽取的奖项">
+          <el-select
+            v-model="form.category"
+            :disabled="categorys.length === 0"
+            :placeholder="categorys.length ? '请选取本次抽取的奖项' : '未设置奖项'"
+          >
             <el-option
               :label="item.label"
               :value="item.value"
@@ -71,7 +75,7 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit">立即抽奖</el-button>
+          <el-button type="primary" :disabled="!form.category || categorys.length === 0" @click="onSubmit">立即抽奖</el-button>
           <el-button @click="showSetwat = false">取消</el-button>
         </el-form-item>
       </el-form>
@@ -185,12 +189,10 @@ const config = computed(() => store.config);
 const result = computed(() => store.result);
 
 const remain = computed(() => {
-  return (
-    config.value[form.value.category] -
-    (result.value[form.value.category]
-      ? result.value[form.value.category].length
-      : 0)
-  );
+  const cat = form.value.category;
+  const total = cat ? (config.value[cat] || 0) : 0;
+  const arr = cat ? (result.value[cat] || []) : [];
+  return total - arr.length;
 });
 
 const categorys = computed(() => {
@@ -212,6 +214,17 @@ const categorys = computed(() => {
 });
 
 // 监听
+watch(categorys, (opts) => {
+  const has = Array.isArray(opts) && opts.length > 0;
+  if (!has) {
+    form.value.category = '';
+    return;
+  }
+  if (!opts.find(o => o.value === form.value.category)) {
+    form.value.category = '';
+  }
+});
+
 watch(() => showRemoveoptions.value, (v) => {
   if (!v) {
     removeInfo.value.type = 0;

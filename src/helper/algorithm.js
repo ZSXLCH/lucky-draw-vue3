@@ -35,10 +35,11 @@ export function randomNum(minNum = 1, maxNum) {
  */
 export function luckydrawHandler(total, won = [], num) {
   const peolist = generateArray(1, Number(total));
-  const wons = won;
+  const wons = Array.isArray(won) ? [...won] : [];
   const res = [];
   for (let j = 0; j < num; j++) {
     const nodraws = peolist.filter(item => !wons.includes(item));
+    if (nodraws.length === 0) break;
     const current = nodraws[randomNum(1, nodraws.length) - 1];
     res.push(current);
     wons.push(current);

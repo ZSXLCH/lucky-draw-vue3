@@ -16,7 +16,7 @@
           <a
             href="javascript:void(0);"
             :style="{
-              color: '#fff',
+              color: item.winner ? '#ffd700' : '#fff',
             }"
           >
             {{ item.name ? item.name : item.key }}
@@ -152,6 +152,7 @@ const datas = computed(() => {
       key: item * (number > 1500 ? 3 : 1),
       name: listData ? listData.name : '',
       photo: photo ? photo.value : '',
+      winner: allresult.value.includes(item),
     };
   });
   return randomShowDatas;
