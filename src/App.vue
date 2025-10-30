@@ -42,22 +42,13 @@
             </div>
           </div>
           <div v-if="totalPages > 1" class="pagination-container">
-            <div class="page-size-selector">
-              <span>每页显示：</span>
-              <el-select v-model="pageSize" size="small" style="width: 80px; margin-right: 10px;">
-                <el-option label="5" :value="5" />
-                <el-option label="10" :value="10" />
-                <el-option label="15" :value="15" />
-                <el-option label="20" :value="20" />
-              </el-select>
-            </div>
-            <el-pagination
-              v-model:current-page="currentPage"
-              :page-size="pageSize"
-              layout="prev, pager, next"
-              :total="resArr.length"
-              @current-change="handlePageChange"
-            />
+              <el-pagination
+                v-model:current-page="currentPage"
+                :page-size="pageSize"
+                layout="prev, pager, next"
+                :total="resArr.length"
+                @current-change="handlePageChange"
+              />
           </div>
         </div>
       </div>
@@ -133,14 +124,14 @@ const audioPlaying = ref(false);
 const audioSrc = ref(bgaudio);
 
 // 分页相关数据
-const pageSize = ref(10); // 可配置的每页显示数据个数
+const pageSize = 14; // 固定每页最多显示14个
 const currentPage = ref(1);
 
 // 计算属性
-const totalPages = computed(() => Math.ceil(resArr.value.length / pageSize.value));
+const totalPages = computed(() => Math.ceil(resArr.value.length / pageSize));
 const currentPageData = computed(() => {
-  const startIndex = (currentPage.value - 1) * pageSize.value;
-  const endIndex = startIndex + pageSize.value;
+  const startIndex = (currentPage.value - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
   return resArr.value.slice(startIndex, endIndex);
 });
 
@@ -506,8 +497,8 @@ const toggle = (form) => {
 
 <style lang="scss">
 #resbox {
-  max-height: 500px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
   padding: 10px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
@@ -525,8 +516,8 @@ const toggle = (form) => {
       
       .result-text {
           display: inline-block;
-          padding: 15px 20px;
-          font-size: 24px;
+          padding: 12px 16px;
+          font-size: 20px;
           font-weight: bold;
           color: #fff;
           background-color: transparent; /* 透明背景 */
@@ -546,14 +537,7 @@ const toggle = (form) => {
   .pagination-container {
     display: flex;
     justify-content: center;
-    align-items: center;
     margin-top: 10px;
-    .page-size-selector {
-      display: flex;
-      align-items: center;
-      margin-right: 20px;
-      color: #fff;
-    }
   }
 }
 </style>
