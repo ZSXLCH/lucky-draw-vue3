@@ -119,28 +119,15 @@ export const useLuckyStore = defineStore('lucky', {
       setData(newLotteryField, this.newLottery);
     },
     setList(list) {
-      const arr = this.list;
-      list.forEach(item => {
-        const arrIndex = arr.findIndex(data => data.key === item.key);
-        if (arrIndex > -1) {
-          arr[arrIndex].name = item.name;
-          if (item.type !== undefined) {
-            arr[arrIndex].type = item.type;
-          }
-          if (item.group !== undefined) {
-            arr[arrIndex].group = item.group;
-          }
-        } else {
-          arr.push({
-            key: item.key,
-            name: item.name,
-            type: item.type,
-            group: item.group || 'default'
-          });
-        }
-      });
-      this.list = arr;
-      setData(listField, arr);
+      // 完全替换现有列表，而不是追加
+      const newList = list.map(item => ({
+        key: item.key,
+        name: item.name,
+        type: item.type,
+        group: item.group || 'default'
+      }));
+      this.list = newList;
+      setData(listField, newList);
     },
     setPhotos(photos) {
       this.photos = photos;
