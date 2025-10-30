@@ -16,7 +16,9 @@
               class="grid-item"
             >
               <span class="result-text">
-                {{ (list.find((d) => d.key === res) || {}).type || '-' }}：{{ (list.find((d) => d.key === res) || {}).name || res }}
+                <span class="result-data">{{ ((currentPages[key] || 1) - 1) * (pageSize.value || 10) + i + 1 }}</span>
+                <span class="result-data">{{ (list.find((d) => d.key === res) || {}).type || '-' }}</span>
+                <span class="result-data">{{ (list.find((d) => d.key === res) || {}).name || res }}</span>
               </span>
             </div>
           </div>
@@ -109,18 +111,18 @@ const handlePageChange = (key, page) => {
         text-align: center;
       }
       .grid-container {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        justify-items: center;
-        margin-bottom: 20px;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          justify-items: center;
+          margin-bottom: 20px;
         .grid-item {
           width: 100%;
           text-align: center;
           .result-text {
-              display: inline-block;
+              display: flex;
               padding: 15px 20px;
-              font-size: 24px;
+              font-size: 28px;
               font-weight: bold;
               color: #333;
               background-color: transparent; /* 透明背景 */
@@ -128,6 +130,14 @@ const handlePageChange = (key, page) => {
               border-radius: 4px;
               width: 90%;
               box-sizing: border-box;
+              justify-content: space-between;
+              align-items: center;
+            }
+            
+            .result-data {
+              flex: 1;
+              text-align: center;
+              margin: 0 10px;
             }
         }
       }

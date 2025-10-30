@@ -55,7 +55,6 @@
             <el-option label="自定义" :value="99"></el-option>
           </el-select>
         </el-form-item>
-
         <el-form-item label="抽取人数" v-if="form.mode === 99">
           <el-input
             v-model="form.qty"

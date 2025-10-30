@@ -18,7 +18,6 @@
     </el-carousel>
   </div>
 </template>
-
 <script setup>
 import { computed } from 'vue';
 import { useLuckyStore } from '@/stores';
