@@ -478,11 +478,11 @@ const toggle = (form) => {
         }
       }
       p {
-        color: red;
-        font-size: 28px;
-        line-height: 40px;
-        margin: 0;
-      }
+          color: red;
+          font-size: 22px;
+          line-height: 30px;
+          margin: 0;
+        }
     }
   .container {
     display: flex;
@@ -547,7 +547,7 @@ const toggle = (form) => {
       .result-text {
           display: inline-block;
           padding: 15px 20px;
-          font-size: 28px;
+          font-size: 32px;
           font-weight: bold;
           color: #fff;
           background-color: transparent; /* 透明背景 */
