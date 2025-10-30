@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A minimal Electron application",
   "main": "main.js",
-   "scripts": {
+  "scripts": {
     "start": "electron .",
     "packager": "electron-packager ./ test --platform=win32 --arch=x64 --icon=./dist/favicon.ico --overwrite"
   },

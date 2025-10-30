@@ -28,11 +28,36 @@
     <transition name="bounce">
       <div id="resbox" v-show="showRes">
         <p @click="showRes = false">{{ categoryName }}抽奖结果：</p>
-        <div class="result-lines">
-          <div class="result-line" v-for="item in resArr" :key="item" @click="showRes = false">
-            <span class="seq">{{ item }}</span>
-            <span class="type">{{ (list.find((d) => d.key === item) || {}).type || '-' }}</span>
-            <span class="name">{{ (list.find((d) => d.key === item) || {}).name || item }}</span>
+        <div v-if="currentPageData.length > 0">
+          <div class="grid-container">
+            <div 
+              v-for="(res, i) in currentPageData" 
+              :key="i" 
+              class="grid-item"
+              @click="showRes = false"
+            >
+              <span class="result-text">
+                {{ (list.find((d) => d.key === res) || {}).type || '-' }}：{{ (list.find((d) => d.key === res) || {}).name || res }}
+              </span>
+            </div>
+          </div>
+          <div v-if="totalPages > 1" class="pagination-container">
+            <div class="page-size-selector">
+              <span>每页显示：</span>
+              <el-select v-model="pageSize" size="small" style="width: 80px; margin-right: 10px;">
+                <el-option label="5" :value="5" />
+                <el-option label="10" :value="10" />
+                <el-option label="15" :value="15" />
+                <el-option label="20" :value="20" />
+              </el-select>
+            </div>
+            <el-pagination
+              v-model:current-page="currentPage"
+              :page-size="pageSize"
+              layout="prev, pager, next"
+              :total="resArr.length"
+              @current-change="handlePageChange"
+            />
           </div>
         </div>
       </div>
@@ -106,6 +131,23 @@ const resArr = ref([]);
 const category = ref('');
 const audioPlaying = ref(false);
 const audioSrc = ref(bgaudio);
+
+// 分页相关数据
+const pageSize = ref(10); // 可配置的每页显示数据个数
+const currentPage = ref(1);
+
+// 计算属性
+const totalPages = computed(() => Math.ceil(resArr.value.length / pageSize.value));
+const currentPageData = computed(() => {
+  const startIndex = (currentPage.value - 1) * pageSize.value;
+  const endIndex = startIndex + pageSize.value;
+  return resArr.value.slice(startIndex, endIndex);
+});
+
+// 处理页码变化
+const handlePageChange = (page) => {
+  currentPage.value = page;
+};
 
 // 计算属性
 const resCardStyle = computed(() => {
@@ -291,6 +333,8 @@ const toggle = (form) => {
     loadAudio();
 
     window.TagCanvas.SetSpeed('rootcanvas', speed());
+    // 重置页码
+    currentPage.value = 1;
     showRes.value = true;
     running.value = !running.value;
     nextTick(() => {
@@ -462,45 +506,53 @@ const toggle = (form) => {
 
 <style lang="scss">
 #resbox {
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
   padding: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
   
-  .result-line {
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    justify-items: center;
+    margin-bottom: 20px;
+    
+    .grid-item {
+      width: 100%;
+      text-align: center;
+      
+      .result-text {
+          display: inline-block;
+          padding: 15px 20px;
+          font-size: 24px;
+          font-weight: bold;
+          color: #fff;
+          background-color: transparent; /* 透明背景 */
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          width: 90%;
+          box-sizing: border-box;
+          cursor: pointer;
+          
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+        }
+    }
+  }
+  
+  .pagination-container {
     display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: center; /* 居中排列三个列 */
-    padding: 8px 10px; /* 减少每行内边距 */
-    margin-bottom: 4px; /* 减少行间距 */
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 4px;
-    cursor: pointer;
-    
-    &:hover {
-      background-color: rgba(255, 255, 255, 1);
-    }
-    
-    .seq {
-      width: 80px; /* 缩小序号列宽 */
-      color: #333;
-      font-weight: bold;
-      text-align: center;
-      font-size: 18px; /* 略微缩小字体以匹配更窄布局 */
-    }
-    
-    .type {
-      width: 120px; /* 缩小类型列宽 */
-      color: #333;
-      text-align: center;
-      font-size: 18px;
-    }
-    
-    .name {
-      flex: 0 0 220px; /* 缩小姓名列宽 */
-      color: #000;
-      font-size: 20px;
-      font-weight: bold;
-      text-align: center;
+    margin-top: 10px;
+    .page-size-selector {
+      display: flex;
+      align-items: center;
+      margin-right: 20px;
+      color: #fff;
     }
   }
 }
