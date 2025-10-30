@@ -32,23 +32,8 @@ const config = computed(() => store.config);
 const result = computed(() => store.result);
 
 const message = computed(() => {
-  const fields = Object.keys(config.value);
-  
-  let messageList = [{ key: 0, title: config.value.name }];
-  fields.forEach((item, index) => {
-    let label = conversionCategoryName(item);
-    if (result.value[item] && config.value[item] > 0) {
-      messageList.push({
-        key: index + 1,
-        title: `${label}抽奖结果:`,
-        value: `${
-          result.value[item].length > 0 ? result.value[item].join('、') : '暂未抽取'
-        }`
-      });
-    }
-  });
-
-  return messageList;
+  // 只返回活动名称，不显示抽奖结果
+  return [{ key: 0, title: config.value.name }];
 });
 </script>
 
