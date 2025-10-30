@@ -209,6 +209,15 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', reportWindowSize);
 });
 
+// 监听窗口大小变化，动态调整字体大小
+window.addEventListener('resize', () => {
+  if (window.TagCanvas.IsLoaded('rootcanvas')) {
+    const textHeight = calculateTextHeight();
+    window.TagCanvas.SetOptions('rootcanvas', { textHeight: textHeight });
+    window.TagCanvas.Reload('rootcanvas');
+  }
+});
+
 // 初始化数据
 const initData = () => {
   const data = getData(configField);
@@ -301,13 +310,45 @@ const createCanvas = () => {
   document.querySelector('#main').appendChild(canvas);
 };
 
+const calculateTextHeight = () => {
+  // 获取总人数
+  const totalPeople = config.value?.number || 1;
+  // 获取窗口大小
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const screenSize = Math.min(windowWidth, windowHeight);
+  
+  // 基础字体大小
+  let baseSize = 20;
+  
+  // 根据总人数调整字体大小：人数越多，字体越小
+  if (totalPeople > 1000) {
+    baseSize = 10;
+  } else if (totalPeople > 500) {
+    baseSize = 12;
+  } else if (totalPeople > 200) {
+    baseSize = 14;
+  } else if (totalPeople > 100) {
+    baseSize = 16;
+  } else if (totalPeople > 50) {
+    baseSize = 18;
+  }
+  
+  // 根据屏幕大小调整字体大小：屏幕越大，字体可以适当增大
+  const screenFactor = screenSize / 1920; // 基于1920px宽度的屏幕作为基准
+  const finalSize = Math.max(8, Math.min(30, baseSize * (1 + (screenFactor - 0.5) * 0.5)));
+  
+  return finalSize;
+};
+
 const startTagCanvas = () => {
   createCanvas();
+  const textHeight = calculateTextHeight();
   window.TagCanvas.Start('rootcanvas', 'tags', {
     textColour: null,
     initial: speed(),
     dragControl: 1,
-    textHeight: 20,
+    textHeight: textHeight,
     noSelect: true,
     lock: 'xy',
   });
