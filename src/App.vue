@@ -397,7 +397,10 @@ const toggle = (form) => {
     const resultArray = luckydrawHandler(
       number,
       allin ? [] : allresult.value,
-      num
+      num,
+      allin,
+      form.groupDraw,
+      list.value
     );
     resArr.value = resultArray;
 

@@ -2,16 +2,33 @@ import { defineStore } from 'pinia';
 import { setData, resultField, newLotteryField, listField, configField } from '@/helper/index';
 
 export const useLuckyStore = defineStore('lucky', {
-  state: () => ({
-    config: {
-      name: '抽奖',
-      number: 70
-    },
-    result: {},
-    newLottery: [],
-    list: [],
-    photos: []
-  }),
+  state: () => {
+    // 创建默认的序号数据，每个数据都带有default分组
+    const createDefaultList = () => {
+      const defaultList = [];
+      const number = 70; // 默认70人
+      for (let i = 1; i <= number; i++) {
+        defaultList.push({
+          key: i.toString(),
+          name: i.toString(),
+          type: null,
+          group: 'default'
+        });
+      }
+      return defaultList;
+    };
+    
+    return {
+      config: {
+        name: '抽奖',
+        number: 70
+      },
+      result: {},
+      newLottery: [],
+      list: createDefaultList(),
+      photos: []
+    };
+  },
   
   actions: {
     setClearConfig() {
@@ -22,7 +39,19 @@ export const useLuckyStore = defineStore('lucky', {
       this.newLottery = [];
     },
     setClearList() {
-      this.list = [];
+      // 重置名单后创建默认序号数据，每个数据都带有default分组
+      const defaultList = [];
+      const number = this.config.number || 70;
+      for (let i = 1; i <= number; i++) {
+        defaultList.push({
+          key: i.toString(),
+          name: i.toString(),
+          type: null,
+          group: 'default'
+        });
+      }
+      this.list = defaultList;
+      setData(listField, defaultList);
     },
     setClearPhotos() {
       this.photos = [];
@@ -98,11 +127,15 @@ export const useLuckyStore = defineStore('lucky', {
           if (item.type !== undefined) {
             arr[arrIndex].type = item.type;
           }
+          if (item.group !== undefined) {
+            arr[arrIndex].group = item.group;
+          }
         } else {
           arr.push({
             key: item.key,
             name: item.name,
-            type: item.type
+            type: item.type,
+            group: item.group || 'default'
           });
         }
       });
