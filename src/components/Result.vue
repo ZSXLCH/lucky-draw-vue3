@@ -8,32 +8,34 @@
     <div class="result-container">
       <div v-for="(item, key) in result" :key="key" class="result-item">
         <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
-        <div class="content">
-          <div
-            v-for="(res, i) in item"
-            :key="i"
-            class="item"
-            :class="{
-              numberOver:
-                !!photos.find((d) => d.id === res) ||
-                !!list.find((d) => d.key === res),
-            }"
-            :data-id="res"
-          >
-            <span v-if="!photos.find((d) => d.id === res)">
-              <span v-if="!!list.find((d) => d.key === res)">
-                {{ list.find((d) => d.key === res).name }}
+        <div v-if="getPages(item).length > 0">
+          <div class="grid-container">
+            <div 
+              v-for="(res, i) in currentPageData(item, currentPages[key] || 1)" 
+              :key="i" 
+              class="grid-item"
+            >
+              <span class="result-text">
+                {{ (list.find((d) => d.key === res) || {}).type || '-' }}：{{ (list.find((d) => d.key === res) || {}).name || res }}
               </span>
-              <span v-else>
-                {{ res }}
-              </span>
-            </span>
-            <img
-              v-if="photos.find((d) => d.id === res)"
-              :src="photos.find((d) => d.id === res).value"
-              alt="photo"
-              :width="80"
-              :height="80"
+            </div>
+          </div>
+          <div v-if="getPages(item).length > 1" class="pagination-container">
+            <div class="page-size-selector">
+              <span>每页显示：</span>
+              <el-select v-model="pageSize" size="small" style="width: 80px; margin-right: 10px;">
+                <el-option label="5" :value="5" />
+                <el-option label="10" :value="10" />
+                <el-option label="15" :value="15" />
+                <el-option label="20" :value="20" />
+              </el-select>
+            </div>
+            <el-pagination
+              v-model:current-page="currentPages[key]"
+              :page-size="pageSize"
+              layout="prev, pager, next"
+              :total="item.length"
+              @current-change="handlePageChange(key, $event)"
             />
           </div>
         </div>
@@ -43,7 +45,7 @@
 </template>
 
 <script setup>
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed, defineProps, defineEmits, reactive, ref } from 'vue';
 import { useLuckyStore } from '@/stores';
 import { conversionCategoryName } from '@/helper/index';
 
@@ -64,7 +66,33 @@ const store = useLuckyStore();
 // 计算属性
 const result = computed(() => store.result);
 const list = computed(() => store.list);
-const photos = computed(() => store.photos);
+
+// 分页相关数据
+const pageSize = ref(10); // 可配置的每页显示数据个数
+const currentPages = reactive({});
+
+// 将结果按页分组，每页最多pageSize人
+const getPages = (items) => {
+  const pages = [];
+  
+  for (let i = 0; i < items.length; i += pageSize.value) {
+    pages.push(items.slice(i, i + pageSize.value));
+  }
+  
+  return pages;
+};
+
+// 获取当前页数据
+const currentPageData = (items, page) => {
+  const startIndex = (page - 1) * pageSize.value;
+  const endIndex = startIndex + pageSize.value;
+  return items.slice(startIndex, endIndex);
+};
+
+// 处理页码变化
+const handlePageChange = (key, page) => {
+  currentPages[key] = page;
+};
 </script>
 
 <style lang="scss" scoped>
@@ -77,37 +105,41 @@ const photos = computed(() => store.photos);
       .title {
         font-size: 18px;
         font-weight: bold;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
+        text-align: center;
       }
-      .content {
-        display: flex;
-        flex-wrap: wrap;
-        .item {
-          width: 80px;
-          height: 80px;
-          line-height: 80px;
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        justify-items: center;
+        margin-bottom: 20px;
+        .grid-item {
+          width: 100%;
           text-align: center;
-          background-color: #fff;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          margin-right: 10px;
-          margin-bottom: 10px;
-          position: relative;
+          .result-text {
+              display: inline-block;
+              padding: 15px 20px;
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+              background-color: transparent; /* 透明背景 */
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              width: 90%;
+              box-sizing: border-box;
+            }
+        }
+      }
+      .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+        .page-size-selector {
           display: flex;
           align-items: center;
-          justify-content: center;
-          &.numberOver::before {
-            content: attr(data-id);
-            width: 20px;
-            height: 16px;
-            line-height: 16px;
-            background-color: #fff;
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            font-size: 12px;
-            z-index: 1;
-          }
+          margin-right: 20px;
         }
       }
     }

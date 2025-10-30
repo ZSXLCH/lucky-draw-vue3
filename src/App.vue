@@ -16,7 +16,7 @@
           <a
             href="javascript:void(0);"
             :style="{
-              color: '#fff',
+              color: item.winner ? '#ffd700' : '#fff',
             }"
           >
             {{ item.name ? item.name : item.key }}
@@ -27,42 +27,32 @@
     </div>
     <transition name="bounce">
       <div id="resbox" v-show="showRes">
-        <p @click="showRes = false">{{ categoryName }}抽奖结果：</p>
-        <div class="container">
-          <span
-            v-for="item in resArr"
-            :key="item"
-            class="itemres"
-            :style="resCardStyle"
-            :data-id="item"
-            @click="showRes = false"
-            :class="{
-              numberOver:
-                !!photos.find((d) => d.id === item) ||
-                !!list.find((d) => d.key === item),
-            }"
-          >
-            <span class="cont" v-if="!photos.find((d) => d.id === item)">
-              <span
-                v-if="!!list.find((d) => d.key === item)"
-                :style="{
-                  fontSize: '40px',
-                }"
-              >
-                {{ list.find((d) => d.key === item).name }}
+        <div class="resbox-header">
+          <p>{{ categoryName }}抽奖结果：</p>
+          <button class="close-button" @click="showRes = false">×</button>
+        </div>
+        <div v-if="currentPageData.length > 0">
+          <div class="grid-container">
+            <div 
+              v-for="(res, i) in currentPageData" 
+              :key="i" 
+              class="grid-item"
+
+            >
+              <span class="result-text">
+                {{ (list.find((d) => d.key === res) || {}).type || '-' }}：{{ (list.find((d) => d.key === res) || {}).name || res }}
               </span>
-              <span v-else>
-                {{ item }}
-              </span>
-            </span>
-            <img
-              v-if="photos.find((d) => d.id === item)"
-              :src="photos.find((d) => d.id === item).value"
-              alt="photo"
-              :width="160"
-              :height="160"
-            />
-          </span>
+            </div>
+          </div>
+          <div v-if="totalPages > 1" class="pagination-container">
+              <el-pagination
+                v-model:current-page="currentPage"
+                :page-size="pageSize"
+                layout="prev, pager, next"
+                :total="resArr.length"
+                @current-change="handlePageChange"
+              />
+          </div>
         </div>
       </div>
     </transition>
@@ -87,11 +77,7 @@
       :closeRes="closeRes"
     />
     <Result v-model:visible="showResult"></Result>
-
-    <span class="copy-right">
-      Copyright©feiye
-    </span>
-
+    
     <audio
       id="audiobg"
       preload="auto"
@@ -140,6 +126,23 @@ const category = ref('');
 const audioPlaying = ref(false);
 const audioSrc = ref(bgaudio);
 
+// 分页相关数据
+const pageSize = 14; // 固定每页最多显示14个
+const currentPage = ref(1);
+
+// 计算属性
+const totalPages = computed(() => Math.ceil(resArr.value.length / pageSize));
+const currentPageData = computed(() => {
+  const startIndex = (currentPage.value - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return resArr.value.slice(startIndex, endIndex);
+});
+
+// 处理页码变化
+const handlePageChange = (page) => {
+  currentPage.value = page;
+};
+
 // 计算属性
 const resCardStyle = computed(() => {
   const style = { fontSize: '30px' };
@@ -185,6 +188,7 @@ const datas = computed(() => {
       key: item * (number > 1500 ? 3 : 1),
       name: listData ? listData.name : '',
       photo: photo ? photo.value : '',
+      winner: allresult.value.includes(item),
     };
   });
   return randomShowDatas;
@@ -203,6 +207,15 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', reportWindowSize);
+});
+
+// 监听窗口大小变化，动态调整字体大小
+window.addEventListener('resize', () => {
+  if (window.TagCanvas.IsLoaded('rootcanvas')) {
+    const textHeight = calculateTextHeight();
+    window.TagCanvas.SetOptions('rootcanvas', { textHeight: textHeight });
+    window.TagCanvas.Reload('rootcanvas');
+  }
 });
 
 // 初始化数据
@@ -297,13 +310,45 @@ const createCanvas = () => {
   document.querySelector('#main').appendChild(canvas);
 };
 
+const calculateTextHeight = () => {
+  // 获取总人数
+  const totalPeople = config.value?.number || 1;
+  // 获取窗口大小
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const screenSize = Math.min(windowWidth, windowHeight);
+  
+  // 基础字体大小
+  let baseSize = 20;
+  
+  // 根据总人数调整字体大小：人数越多，字体越小
+  if (totalPeople > 1000) {
+    baseSize = 10;
+  } else if (totalPeople > 500) {
+    baseSize = 12;
+  } else if (totalPeople > 200) {
+    baseSize = 14;
+  } else if (totalPeople > 100) {
+    baseSize = 16;
+  } else if (totalPeople > 50) {
+    baseSize = 18;
+  }
+  
+  // 根据屏幕大小调整字体大小：屏幕越大，字体可以适当增大
+  const screenFactor = screenSize / 1920; // 基于1920px宽度的屏幕作为基准
+  const finalSize = Math.max(8, Math.min(30, baseSize * (1 + (screenFactor - 0.5) * 0.5)));
+  
+  return finalSize;
+};
+
 const startTagCanvas = () => {
   createCanvas();
+  const textHeight = calculateTextHeight();
   window.TagCanvas.Start('rootcanvas', 'tags', {
     textColour: null,
     initial: speed(),
     dragControl: 1,
-    textHeight: 20,
+    textHeight: textHeight,
     noSelect: true,
     lock: 'xy',
   });
@@ -323,6 +368,8 @@ const toggle = (form) => {
     loadAudio();
 
     window.TagCanvas.SetSpeed('rootcanvas', speed());
+    // 重置页码
+    currentPage.value = 1;
     showRes.value = true;
     running.value = !running.value;
     nextTick(() => {
@@ -443,14 +490,41 @@ const toggle = (form) => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 1280px;
+  width: 980px;
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
-  p {
-    color: red;
-    font-size: 50px;
-    line-height: 120px;
-  }
+  .resbox-header {
+      position: relative;
+      text-align: center;
+      margin-bottom: 20px;
+      width: 100%;
+      .close-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f00;
+        color: #fff;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        &:hover {
+          background-color: #d00;
+        }
+      }
+      p {
+          color: red;
+          font-size: 22px;
+          line-height: 30px;
+          margin: 0;
+        }
+    }
   .container {
     display: flex;
     justify-content: center;
@@ -488,6 +562,53 @@ const toggle = (form) => {
       font-size: 14px;
       z-index: 1;
     }
+  }
+}
+</style>
+
+<style lang="scss">
+#resbox {
+  max-height: none;
+  overflow-y: visible;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    justify-items: center;
+    margin-bottom: 20px;
+    
+    .grid-item {
+      width: 100%;
+      text-align: center;
+      
+      .result-text {
+          display: inline-block;
+          padding: 15px 20px;
+          font-size: 32px;
+          font-weight: bold;
+          color: #fff;
+          background-color: transparent; /* 透明背景 */
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          width: 90%;
+          box-sizing: border-box;
+          cursor: pointer;
+          
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+        }
+    }
+  }
+  
+  .pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
   }
 }
 </style>

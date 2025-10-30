@@ -2,7 +2,7 @@
   <el-dialog
     v-model="dialogVisible"
     :append-to-body="true"
-    width="390px"
+    width="640px"
     class="c-LotteryConfig"
   >
     <template #header>
@@ -32,19 +32,14 @@
             :step="1"
           ></el-input>
         </el-form-item>
-        <el-form-item label="一等奖">
-          <el-input
-            type="number"
-            v-model="form.firstPrize"
-            :min="0"
-            :step="1"
-          ></el-input>
-        </el-form-item>
+
         <el-form-item
-          :label="newitem.name"
-          v-for="newitem in storeNewLottery"
+          v-for="(newitem, index) in storeNewLottery"
           :key="newitem.key"
+          class="prize-item"
         >
+          <div class="prize-label">{{ newitem.name }}</div>
+          <span class="prize-count-label">人数：</span>
           <el-input
             type="number"
             :min="0"
@@ -56,6 +51,11 @@
               }
             "
           ></el-input>
+          <div class="prize-actions">
+            <el-button size="small" type="primary" @click="renamePrize(newitem)">重命名</el-button>
+            <el-button size="small" type="danger" @click="deletePrize(newitem, index)">删除</el-button>
+          </div>
+          <el-icon class="drag-handle" @mousedown="startDrag($event, index)"><Rank /></el-icon>
         </el-form-item>
       </el-form>
     </div>
@@ -79,15 +79,37 @@
         </el-form-item>
       </el-form>
     </el-dialog>
+    
+    <!-- 重命名对话框 -->
+    <el-dialog
+      v-model="showRenameLottery"
+      :append-to-body="true"
+      width="300px"
+      class="dialog-showRenameLottery"
+    >
+      <template #header>
+        <div class="rename-title">重命名奖项</div>
+      </template>
+      <el-form ref="renameLotteryRef" :model="renameLotteryData" size="small">
+        <el-form-item label="奖项名称">
+          <el-input v-model="renameLotteryData.name"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="renameHandler">确定</el-button>
+          <el-button @click="showRenameLottery = false">取消</el-button>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, computed, nextTick, defineProps, defineEmits } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { useLuckyStore } from '@/stores';
 import { setData, configField } from '@/helper/index';
 import { randomNum } from '@/helper/algorithm';
+import { Rank } from '@element-plus/icons-vue';
 
 // 定义属性和事件
 const props = defineProps({
@@ -101,9 +123,13 @@ const store = useLuckyStore();
 
 // 响应式数据
 const showAddLottery = ref(false);
+const showRenameLottery = ref(false);
 const newLottery = ref({ name: '' });
+const renameLotteryData = ref({ name: '', key: '', index: -1 });
 const formRef = ref(null);
 const newLotteryRef = ref(null);
+const renameLotteryRef = ref(null);
+const dragItem = ref(null);
 
 // 计算属性
 const dialogVisible = computed({
@@ -161,6 +187,112 @@ const addHandler = () => {
 
   showAddLottery.value = false;
 };
+
+// 重命名奖项
+const renamePrize = (item) => {
+  renameLotteryData.value = {
+    name: item.name,
+    key: item.key,
+    index: storeNewLottery.value.findIndex(i => i.key === item.key)
+  };
+  showRenameLottery.value = true;
+};
+
+// 处理重命名
+const renameHandler = () => {
+  if (!renameLotteryData.value.name) {
+    ElMessage.error('奖项名称不能为空');
+    return;
+  }
+  
+  // 更新奖项名称
+  const index = renameLotteryData.value.index;
+  const key = renameLotteryData.value.key;
+  
+  // 更新store中的奖项名称
+  store.renameNewLottery({
+    index,
+    key,
+    name: renameLotteryData.value.name
+  });
+  
+  showRenameLottery.value = false;
+  
+  ElMessage({
+    message: '重命名成功',
+    type: 'success'
+  });
+};
+
+// 删除奖项
+const deletePrize = (item, index) => {
+  ElMessageBox.confirm(
+    '确定要删除该奖项吗？相关的中奖数据也会被删除',
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  )
+    .then(() => {
+      // 删除奖项和相关中奖数据
+      store.deleteNewLottery({
+        key: item.key,
+        index
+      });
+      
+      ElMessage({
+        type: 'success',
+        message: '删除成功',
+      });
+    })
+    .catch(() => {
+      // 取消删除
+    });
+};
+
+// 拖动排序相关方法
+const startDrag = (event, index) => {
+  dragItem.value = index;
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+};
+
+const onDrag = (event) => {
+  if (dragItem.value === null) return;
+  
+  // 这里可以添加拖动时的视觉效果
+  // 简化实现，仅在松开鼠标时进行排序
+};
+
+const stopDrag = (event) => {
+  if (dragItem.value === null) return;
+  
+  // 获取鼠标位置对应的目标索引
+  const items = document.querySelectorAll('.prize-item');
+  let targetIndex = null;
+  
+  items.forEach((item, index) => {
+    const rect = item.getBoundingClientRect();
+    if (
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    ) {
+      targetIndex = index;
+    }
+  });
+  
+  // 如果找到有效的目标索引，执行排序
+  if (targetIndex !== null && targetIndex !== dragItem.value) {
+    store.reorderNewLottery(dragItem.value, targetIndex);
+  }
+  
+  // 清理
+  dragItem.value = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -175,9 +307,76 @@ const addHandler = () => {
   }
 }
 
-:deep(.dialog-showAddLottery) {
+:deep(.dialog-showAddLottery),
+:deep(.dialog-showRenameLottery) {
   .el-dialog {
     height: 186px;
+  }
+}
+
+.prize-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap; /* 强制同一行显示 */
+  margin-bottom: 10px;
+  position: relative;
+  padding: 10px;
+  padding-right: 80px; /* 预留更大右侧空间，确保拖动图标最右且不重叠 */
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+  background-color: #f5f7fa;
+  
+  &:hover {
+    background-color: #ecf5ff;
+    
+    .drag-handle {
+      opacity: 1;
+    }
+  }
+  
+  .prize-label {
+    min-width: 120px;
+    max-width: 220px;
+    margin-right: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .prize-count-label {
+    margin-right: 6px;
+    color: #666;
+  }
+  
+  .el-input {
+    width: 140px;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  
+  .prize-actions {
+    display: flex;
+    gap: 5px;
+    margin-left: auto; /* 动作区靠右 */
+    margin-right: 60px; /* 与拖动图标保持更大间距 */
+    flex-shrink: 0; /* 防止被压缩换行 */
+    position: relative;
+    z-index: 1; /* 与拖动图标叠放顺序分离 */
+  }
+  
+  .drag-handle {
+    position: absolute;
+    right: 0; /* 固定到最右边 */
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: move;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+    font-size: 18px;
+    color: #409eff;
+    z-index: 0;
+    padding-right: 6px;
   }
 }
 </style>
