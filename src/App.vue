@@ -27,14 +27,17 @@
     </div>
     <transition name="bounce">
       <div id="resbox" v-show="showRes">
-        <p @click="showRes = false">{{ categoryName }}抽奖结果：</p>
+        <div class="resbox-header">
+          <p>{{ categoryName }}抽奖结果：</p>
+          <button class="close-button" @click="showRes = false">×</button>
+        </div>
         <div v-if="currentPageData.length > 0">
           <div class="grid-container">
             <div 
               v-for="(res, i) in currentPageData" 
               :key="i" 
               class="grid-item"
-              @click="showRes = false"
+
             >
               <span class="result-text">
                 {{ (list.find((d) => d.key === res) || {}).type || '-' }}：{{ (list.find((d) => d.key === res) || {}).name || res }}
@@ -449,11 +452,38 @@ const toggle = (form) => {
   width: 980px;
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
-  p {
-    color: red;
-    font-size: 50px;
-    line-height: 120px;
-  }
+  .resbox-header {
+      position: relative;
+      text-align: center;
+      margin-bottom: 20px;
+      width: 100%;
+      .close-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f00;
+        color: #fff;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        &:hover {
+          background-color: #d00;
+        }
+      }
+      p {
+        color: red;
+        font-size: 28px;
+        line-height: 40px;
+        margin: 0;
+      }
+    }
   .container {
     display: flex;
     justify-content: center;
@@ -516,8 +546,8 @@ const toggle = (form) => {
       
       .result-text {
           display: inline-block;
-          padding: 12px 16px;
-          font-size: 20px;
+          padding: 15px 20px;
+          font-size: 28px;
           font-weight: bold;
           color: #fff;
           background-color: transparent; /* 透明背景 */
