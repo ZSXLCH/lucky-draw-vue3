@@ -74,6 +74,22 @@
           </span>
         </el-form-item>
 
+        <el-form-item label="分组抽奖">
+          <el-switch v-model="form.groupDraw" :disabled="!canGroupDraw"></el-switch>
+          <span :style="{ fontSize: '12px', marginLeft: '10px', color: '#409eff' }">
+            (当前名单中有{{ groupCount }}个小组)
+          </span>
+          <span :style="{ fontSize: '12px', marginLeft: '10px' }" v-if="canGroupDraw && form.groupDraw">
+            平均每组抽取{{ Math.floor((form.mode === 99 ? form.qty : (form.mode === 0 ? remain : form.mode)) / groupCount) }}人，余{{ (form.mode === 99 ? form.qty : (form.mode === 0 ? remain : form.mode)) % groupCount }}人在全体中抽取
+          </span>
+          <span v-else-if="groupCount < 1" style="font-size: '12px'; color: #909399">
+            (无分组数据，无法开启)
+          </span>
+          <span v-else-if="!canGroupDraw" style="font-size: '12px'; color: #909399">
+            (抽奖数小于分组数，无法开启)
+          </span>
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" :disabled="!form.category || categorys.length === 0" @click="onSubmit">立即抽奖</el-button>
           <el-button @click="showSetwat = false">取消</el-button>
@@ -90,10 +106,10 @@
       <el-input
         type="textarea"
         :rows="8"
-        placeholder="请输入三列数据(可直接从Excel复制)，格式为：序号 类型 姓名。示例：
-        1 技术部 张三
-        2 市场部 李四
-        3 行政 王五"
+        placeholder="请输入四列数据(可直接从Excel复制)，格式为：序号 分组 类型 姓名。示例：
+        1 第一组 技术部 张三
+        2 第二组 市场部 李四
+        3 第一组 行政 王五"
         v-model="listStr"
       ></el-input>
       <div class="footer">
@@ -178,7 +194,8 @@ const form = ref({
   category: '',
   mode: 1,
   qty: 1,
-  allin: false
+  allin: false,
+  groupDraw: false
 });
 const listStr = ref('');
 const formRef = ref(null);
@@ -231,6 +248,7 @@ watch(() => showRemoveoptions.value, (v) => {
   }
 });
 
+// 监听
 // 方法
 const resetConfig = () => {
   const type = removeInfo.value.type;
@@ -307,6 +325,11 @@ const onSubmit = () => {
     }
   }
   showSetwat.value = false;
+  // 如果没有导入名单且开启了分组抽奖，设置默认分组为'default'
+  if (form.value.groupDraw && (!store.list || store.list.length === 0)) {
+    ElMessage.warning('未导入名单，所有人员将默认分配到"default"分组');
+  }
+  
   emit(
     'toggle',
     Object.assign({}, form.value, { remain: remain.value })
@@ -332,17 +355,21 @@ const transformList = () => {
       const cols = item.trim().split(/\t|,|\s+/);
       if (cols.length >= 3) {
         const key = Number(cols[0].trim());
-        const type = (cols[1] || '').trim();
-        const name = cols.slice(2).join(' ').trim();
+        const group = (cols[1] || 'default').trim();
+        const type = cols.length >= 4 ? (cols[2] || '').trim() : '';
+        const name = cols.length >= 4 ? cols.slice(3).join(' ').trim() : cols.slice(2).join(' ').trim();
         key &&
           list.push({
             key,
+            group,
             type,
             name
           });
       }
     });
   }
+  // 清空现有名单，然后导入新名单
+  store.setClearList();
   store.setList(list);
 
   ElMessage({
@@ -375,14 +402,15 @@ const handleUploadChange = (file) => {
         return;
       }
       const header = rows[0].map(String);
-      const expect = ['序号', '类型', '姓名'];
+      const expect = ['序号', '分组', '类型', '姓名'];
       const isHeaderOk =
-        header.length >= 3 &&
+        header.length >= 4 &&
         header[0].trim() === expect[0] &&
         header[1].trim() === expect[1] &&
-        header[2].trim() === expect[2];
+        header[2].trim() === expect[2] &&
+        header[3].trim() === expect[3];
       if (!isHeaderOk) {
-        ElMessage.error('表头需为：序号 类型 姓名');
+        ElMessage.error('表头需为：序号 分组 类型 姓名');
         return;
       }
       
@@ -391,10 +419,11 @@ const handleUploadChange = (file) => {
       rows.slice(1).forEach((row) => {
         if (!row || row.length === 0) return;
         const key = String(row[0] ?? '').trim();
-        const type = String(row[1] ?? '').trim();
-        const name = String(row[2] ?? '').trim();
+        const group = String(row[1] ?? 'default').trim();
+        const type = String(row[2] ?? '').trim();
+        const name = String(row[3] ?? '').trim();
         if (key && name) {
-          importText += `${key} ${type} ${name}\n`;
+          importText += `${key} ${group} ${type} ${name}\n`;
         }
       });
       
@@ -416,12 +445,43 @@ const handleUploadChange = (file) => {
 };
 
 // 示例Excel下载
+// 计算属性：分组数量
+const groupCount = computed(() => {
+  const list = store.list || [];
+  const groups = new Set();
+  list.forEach(item => {
+    groups.add(item.group || 'default');
+  });
+  return groups.size;
+});
+
+// 计算属性：是否可以开启分组抽奖
+const canGroupDraw = computed(() => {
+  let qty;
+  if (form.value.mode === 99) {
+    qty = form.value.qty;
+  } else if (form.value.mode === 0) {
+    qty = remain.value;
+  } else {
+    qty = form.value.mode;
+  }
+  return qty >= groupCount.value && groupCount.value > 0;
+});
+
+// 监听canGroupDraw变化，当不能分组抽奖时自动关闭分组抽奖开关
+watch(canGroupDraw, (newVal) => {
+  if (!newVal && form.value.groupDraw) {
+    form.value.groupDraw = false;
+  }
+});
+
 const downloadSampleExcel = () => {
   const wb = XLSX.utils.book_new();
   const data = [
-    ['序号', '类型', '姓名'],
-    [1, '技术部', '张三'],
-    [2, '市场部', '李四']
+    ['序号', '分组', '类型', '姓名'],
+    [1, '第一组', '技术部', '张三'],
+    [2, '第二组', '市场部', '李四'],
+    [3, '第一组', '行政', '王五']
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, '示例');

@@ -397,7 +397,10 @@ const toggle = (form) => {
     const resultArray = luckydrawHandler(
       number,
       allin ? [] : allresult.value,
-      num
+      num,
+      allin,
+      form.groupDraw,
+      list.value
     );
     resArr.value = resultArray;
 
@@ -493,6 +496,7 @@ const toggle = (form) => {
   width: 980px;
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
+  z-index: 10000; /* 确保结果弹窗显示在最上层，高于右侧按钮的z-index: 9999 */
   .resbox-header {
       position: relative;
       text-align: center;
@@ -501,7 +505,7 @@ const toggle = (form) => {
       .close-button {
         position: absolute;
         top: 0;
-        left: 0;
+        right: 0; /* 从左上改为右上 */
         width: 40px;
         height: 40px;
         border-radius: 50%;
