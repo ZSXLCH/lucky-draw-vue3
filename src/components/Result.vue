@@ -12,8 +12,11 @@
       </div>
     </template>
     <div class="result-container">
-      <div v-for="(item, key) in result" :key="key" class="result-item">
-        <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
+      <div v-for="(item, key) in filteredResult" :key="key" class="result-item">
+        <div class="title-row">
+          <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
+          <el-button size="small" type="danger" @click="resetCategoryResult(key)">重置该奖项结果</el-button>
+        </div>
         <div v-if="getPages(item).length > 0">
           <div class="grid-container">
             <div 
@@ -54,7 +57,7 @@
 import { computed, defineProps, defineEmits, reactive, ref } from 'vue';
 import { useLuckyStore } from '@/stores';
 import { conversionCategoryName } from '@/helper/index';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import * as XLSX from 'xlsx';
 
 // 定义属性
@@ -73,6 +76,12 @@ const store = useLuckyStore();
 // 计算属性
 const result = computed(() => store.result);
 const list = computed(() => store.list);
+// 仅保留有数据的奖项
+const filteredResult = computed(() => {
+  const obj = result.value || {};
+  const entries = Object.entries(obj).filter(([key, arr]) => Array.isArray(arr) && arr.length > 0);
+  return Object.fromEntries(entries);
+});
 
 // 分页相关数据
 const pageSize = ref(10); // 可配置的每页显示数据个数
@@ -99,6 +108,27 @@ const currentPageData = (items, page) => {
 // 处理页码变化
 const handlePageChange = (key, page) => {
   currentPages[key] = page;
+};
+
+// 重置指定奖项的中奖结果
+const resetCategoryResult = (key) => {
+  const winners = result.value[key] || [];
+  if (!winners.length) {
+    ElMessage.info('该奖项暂无中奖数据');
+    return;
+  }
+  ElMessageBox.confirm('确定要重置该奖项的中奖结果吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    const data = { ...result.value };
+    data[key] = [];
+    store.setResult(data);
+    ElMessage.success('已重置该奖项中奖结果');
+  }).catch(() => {
+    // 用户取消操作
+  });
 };
 
 // 导出所有中奖名单为Excel
@@ -199,6 +229,12 @@ const exportWinnersExcel = () => {
           margin-right: 20px;
         }
       }
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
   }
 }

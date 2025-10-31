@@ -255,6 +255,13 @@ watch(photos, () => {
   });
 }, { deep: true });
 
+// 新增：监听中奖结果变化，重新加载球体颜色
+watch(result, () => {
+  nextTick(() => {
+    reloadTagCanvas();
+  });
+}, { deep: true });
+
 // 方法
 const reportWindowSize = () => {
   const AppCanvas = document.querySelector('#rootcanvas');
