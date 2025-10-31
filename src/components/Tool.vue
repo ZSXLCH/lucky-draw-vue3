@@ -9,6 +9,9 @@
     <el-button size="small" @click="showImport = true">
       导入名单
     </el-button>
+    <el-button size="small" @click="exportListExcel">
+      导出名单
+    </el-button>
     <el-button size="small" @click="showImportphoto = true">
       导入照片
     </el-button>
@@ -486,6 +489,28 @@ const downloadSampleExcel = () => {
   const ws = XLSX.utils.aoa_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, '示例');
   XLSX.writeFile(wb, '示例导入文件.xlsx');
+};
+
+// 导出当前名单为Excel
+const exportListExcel = () => {
+  const list = store.list || [];
+  if (!list || list.length === 0) {
+    ElMessage.error('当前无名单可导出');
+    return;
+  }
+  const data = [
+    ['序号', '分组', '类型', '姓名'],
+    ...list.map(item => [
+      item.key,
+      item.group || 'default',
+      item.type || '',
+      item.name || ''
+    ])
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, '当前名单');
+  XLSX.writeFile(wb, '当前名单.xlsx');
 };
 </script>
 

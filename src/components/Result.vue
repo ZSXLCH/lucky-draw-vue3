@@ -5,9 +5,18 @@
     width="800px"
     class="c-Result"
   >
+    <template #header>
+      <div class="result-header">
+        <span class="dialog-title">抽奖结果</span>
+        <el-button size="small" type="primary" @click="exportWinnersExcel">导出中奖名单</el-button>
+      </div>
+    </template>
     <div class="result-container">
-      <div v-for="(item, key) in result" :key="key" class="result-item">
-        <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
+      <div v-for="(item, key) in filteredResult" :key="key" class="result-item">
+        <div class="title-row">
+          <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
+          <el-button size="small" type="danger" @click="resetCategoryResult(key)">重置该奖项结果</el-button>
+        </div>
         <div v-if="getPages(item).length > 0">
           <div class="grid-container">
             <div 
@@ -48,6 +57,8 @@
 import { computed, defineProps, defineEmits, reactive, ref } from 'vue';
 import { useLuckyStore } from '@/stores';
 import { conversionCategoryName } from '@/helper/index';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import * as XLSX from 'xlsx';
 
 // 定义属性
 const props = defineProps({
@@ -65,6 +76,12 @@ const store = useLuckyStore();
 // 计算属性
 const result = computed(() => store.result);
 const list = computed(() => store.list);
+// 仅保留有数据的奖项
+const filteredResult = computed(() => {
+  const obj = result.value || {};
+  const entries = Object.entries(obj).filter(([key, arr]) => Array.isArray(arr) && arr.length > 0);
+  return Object.fromEntries(entries);
+});
 
 // 分页相关数据
 const pageSize = ref(10); // 可配置的每页显示数据个数
@@ -92,10 +109,81 @@ const currentPageData = (items, page) => {
 const handlePageChange = (key, page) => {
   currentPages[key] = page;
 };
+
+// 重置指定奖项的中奖结果
+const resetCategoryResult = (key) => {
+  const winners = result.value[key] || [];
+  if (!winners.length) {
+    ElMessage.info('该奖项暂无中奖数据');
+    return;
+  }
+  ElMessageBox.confirm('确定要重置该奖项的中奖结果吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    const data = { ...result.value };
+    data[key] = [];
+    store.setResult(data);
+    ElMessage.success('已重置该奖项中奖结果');
+  }).catch(() => {
+    // 用户取消操作
+  });
+};
+
+// 导出所有中奖名单为Excel
+const exportWinnersExcel = () => {
+  const resObj = result.value || {};
+  const listArr = list.value || [];
+
+  const categories = Object.keys(resObj);
+  if (categories.length === 0) {
+    ElMessage.error('当前无中奖数据可导出');
+    return;
+  }
+
+  const header = ['序号', '奖项', '分组', '类型', '姓名'];
+  const rows = [];
+
+  categories.forEach((cat) => {
+    const winners = resObj[cat] || [];
+    const catName = conversionCategoryName(cat) || cat;
+    winners.forEach((id) => {
+      const info = listArr.find((d) => d.key === id) || {};
+      rows.push([
+        id,
+        catName,
+        info.group || '',
+        info.type || '',
+        info.name || id,
+      ]);
+    });
+  });
+
+  if (rows.length === 0) {
+    ElMessage.error('当前无中奖数据可导出');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  XLSX.utils.book_append_sheet(wb, ws, '中奖名单');
+  XLSX.writeFile(wb, '中奖名单.xlsx');
+  ElMessage.success('导出成功：中奖名单.xlsx');
+};
 </script>
 
 <style lang="scss" scoped>
 .c-Result {
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dialog-title {
+    font-size: 16px;
+    font-weight: bold;
+  }
   .result-container {
     max-height: 500px;
     overflow-y: auto;
@@ -141,6 +229,12 @@ const handlePageChange = (key, page) => {
           margin-right: 20px;
         }
       }
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
   }
 }

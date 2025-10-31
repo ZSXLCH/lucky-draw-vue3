@@ -2,6 +2,16 @@
   <div id="root">
     <header>
       <Publicity v-show="!running" />
+      <el-button
+        class="audio"
+        type="text"
+        @click="playAudio(!audioPlaying)"
+      >
+        <i
+          class="iconfont"
+          :class="[audioPlaying ? 'iconstop' : 'iconplay1']"
+        ></i>
+      </el-button>
       <el-button class="res" type="text" @click="showResult = true">
         抽奖结果
       </el-button>
@@ -56,17 +66,6 @@
         </div>
       </div>
     </transition>
-
-    <el-button
-      class="audio"
-      type="text"
-      @click="playAudio(!audioPlaying)"
-    >
-      <i
-        class="iconfont"
-        :class="[audioPlaying ? 'iconstop' : 'iconplay1']"
-      ></i>
-    </el-button>
 
     <LotteryConfig v-model:visible="showConfig" @resetconfig="reloadTagCanvas" />
     <Tool
@@ -251,6 +250,13 @@ initData();
 
 // 监听照片变化
 watch(photos, () => {
+  nextTick(() => {
+    reloadTagCanvas();
+  });
+}, { deep: true });
+
+// 新增：监听中奖结果变化，重新加载球体颜色
+watch(result, () => {
   nextTick(() => {
     reloadTagCanvas();
   });
@@ -447,22 +453,20 @@ const toggle = (form) => {
       &.res {
         right: 100px;
       }
-    }
-  }
-  .audio {
-    position: absolute;
-    top: 100px;
-    right: 30px;
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-    border: 1px solid #fff;
-    border-radius: 50%;
-    padding: 0;
-    text-align: center;
-    .iconfont {
-      position: relative;
-      left: 1px;
+      &.audio {
+        left: 20px;
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        border: 1px solid #fff;
+        border-radius: 50%;
+        padding: 0;
+        text-align: center;
+        .iconfont {
+          position: relative;
+          left: 1px;
+        }
+      }
     }
   }
   .copy-right {
