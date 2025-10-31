@@ -5,6 +5,12 @@
     width="800px"
     class="c-Result"
   >
+    <template #header>
+      <div class="result-header">
+        <span class="dialog-title">抽奖结果</span>
+        <el-button size="small" type="primary" @click="exportWinnersExcel">导出中奖名单</el-button>
+      </div>
+    </template>
     <div class="result-container">
       <div v-for="(item, key) in result" :key="key" class="result-item">
         <div class="title">{{ conversionCategoryName(key) }}抽奖结果：</div>
@@ -48,6 +54,8 @@
 import { computed, defineProps, defineEmits, reactive, ref } from 'vue';
 import { useLuckyStore } from '@/stores';
 import { conversionCategoryName } from '@/helper/index';
+import { ElMessage } from 'element-plus';
+import * as XLSX from 'xlsx';
 
 // 定义属性
 const props = defineProps({
@@ -92,10 +100,60 @@ const currentPageData = (items, page) => {
 const handlePageChange = (key, page) => {
   currentPages[key] = page;
 };
+
+// 导出所有中奖名单为Excel
+const exportWinnersExcel = () => {
+  const resObj = result.value || {};
+  const listArr = list.value || [];
+
+  const categories = Object.keys(resObj);
+  if (categories.length === 0) {
+    ElMessage.error('当前无中奖数据可导出');
+    return;
+  }
+
+  const header = ['序号', '奖项', '分组', '类型', '姓名'];
+  const rows = [];
+
+  categories.forEach((cat) => {
+    const winners = resObj[cat] || [];
+    const catName = conversionCategoryName(cat) || cat;
+    winners.forEach((id) => {
+      const info = listArr.find((d) => d.key === id) || {};
+      rows.push([
+        id,
+        catName,
+        info.group || '',
+        info.type || '',
+        info.name || id,
+      ]);
+    });
+  });
+
+  if (rows.length === 0) {
+    ElMessage.error('当前无中奖数据可导出');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  XLSX.utils.book_append_sheet(wb, ws, '中奖名单');
+  XLSX.writeFile(wb, '中奖名单.xlsx');
+  ElMessage.success('导出成功：中奖名单.xlsx');
+};
 </script>
 
 <style lang="scss" scoped>
 .c-Result {
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dialog-title {
+    font-size: 16px;
+    font-weight: bold;
+  }
   .result-container {
     max-height: 500px;
     overflow-y: auto;
