@@ -492,8 +492,42 @@ const resetCardState = () => {
 
 const toggle = (form) => {
   if (running.value) {
+    // 停止抽奖时的逻辑
     audioSrc.value = bgaudio;
     loadAudio();
+
+    // 只有在停止时才生成抽奖结果
+    if (form) {
+      const { number } = config.value;
+      const { category: cat, mode, qty, remain, allin } = form;
+      let num = 1;
+      if (mode === 1 || mode === 5) {
+        num = mode;
+      } else if (mode === 0) {
+        num = remain;
+      } else if (mode === 99) {
+        num = qty;
+      }
+      const resultArray = luckydrawHandler(
+        number,
+        allin ? [] : allresult.value,
+        num,
+        allin,
+        form.groupDraw,
+        list.value
+      );
+      resArr.value = resultArray;
+
+      category.value = cat;
+      if (!result.value[cat]) {
+        result.value[cat] = [];
+      }
+      const oldRes = result.value[cat] || [];
+      const data = Object.assign({}, result.value, {
+        [cat]: oldRes.concat(resultArray),
+      });
+      result.value = data;
+    }
 
     window.TagCanvas.SetSpeed('rootcanvas', speed());
     // 重置页码
@@ -508,6 +542,7 @@ const toggle = (form) => {
       reloadTagCanvas();
     });
   } else {
+    // 开始抽奖时只设置状态，不生成结果
     showRes.value = false;
     if (!form) {
       return;
@@ -515,36 +550,6 @@ const toggle = (form) => {
 
     audioSrc.value = beginaudio;
     loadAudio();
-
-    const { number } = config.value;
-    const { category: cat, mode, qty, remain, allin } = form;
-    let num = 1;
-    if (mode === 1 || mode === 5) {
-      num = mode;
-    } else if (mode === 0) {
-      num = remain;
-    } else if (mode === 99) {
-      num = qty;
-    }
-    const resultArray = luckydrawHandler(
-      number,
-      allin ? [] : allresult.value,
-      num,
-      allin,
-      form.groupDraw,
-      list.value
-    );
-    resArr.value = resultArray;
-
-    category.value = cat;
-    if (!result.value[cat]) {
-      result.value[cat] = [];
-    }
-    const oldRes = result.value[cat] || [];
-    const data = Object.assign({}, result.value, {
-      [cat]: oldRes.concat(resultArray),
-    });
-    result.value = data;
     window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
     running.value = !running.value;
   }

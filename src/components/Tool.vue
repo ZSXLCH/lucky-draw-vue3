@@ -340,8 +340,15 @@ const onSubmit = () => {
 };
 
 const startHandler = () => {
-  emit('toggle');
-  if (!props.running) {
+  if (props.running) {
+    // 停止抽奖时，需要传递form参数
+    emit(
+      'toggle',
+      Object.assign({}, form.value, { remain: remain.value })
+    );
+  } else {
+    // 开始抽奖时，不需要传递form参数
+    emit('toggle');
     showSetwat.value = true;
   }
 };
