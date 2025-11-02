@@ -45,7 +45,8 @@
             class="stacked-card active"
             :class="{
               'flipped': isTopCardFlipped,
-              'flying-out': isTopCardFlyingOut
+              'flying-out': isTopCardFlyingOut,
+              'visible': isTopCardVisible
             }"
             :style="{
               zIndex: 1000,
@@ -78,8 +79,7 @@
             :key="index"
             class="stacked-card"
             :style="{
-              zIndex: 999 - index,
-              transform: `translateY(-${(index + 1) * 10}px) rotate(${(index + 1) * 2}deg)`,
+              zIndex: 999 - index,  // 恢复原来的z-index递减顺序
               boxShadow: `0 ${(index + 1) * 2}px ${(index + 1) * 4}px rgba(0, 0, 0, 0.3)`
             }"
           >
@@ -197,6 +197,9 @@ const showDrawCard = ref(false);
 const remainingCards = ref([]); // 剩余的卡片数组
 const isTopCardFlipped = ref(false);
 const isTopCardFlyingOut = ref(false);
+const cardStackAnimation = ref(false); // 卡片堆叠动画状态
+const animatedCards = ref([]); // 用于动画的卡片数组
+const isTopCardVisible = ref(false); // 顶部卡片是否可见
 
 // 分页相关数据
 const pageSize = 14; // 固定每页最多显示14个
@@ -486,8 +489,41 @@ const handleTopCardClick = () => {
 const resetCardState = () => {
   showDrawCard.value = false;
   remainingCards.value = [];
+  animatedCards.value = [];
   isTopCardFlipped.value = false;
   isTopCardFlyingOut.value = false;
+  cardStackAnimation.value = false;
+};
+
+// 开始卡片堆叠动画
+const startCardStackAnimation = () => {
+  // 重置顶部卡片可见性
+  isTopCardVisible.value = false;
+  
+  // 使用nextTick确保DOM已更新
+  nextTick(() => {
+    // 从最后一张开始依次添加飞入动画
+    remainingCards.value.forEach((cardKey, index) => {
+      setTimeout(() => {
+        // 使用更可靠的选择器
+        const cardElements = document.querySelectorAll('.stacked-card');
+        const cardIndex = remainingCards.value.length - index - 1; // 从最后一张开始
+        
+        // 特殊处理顶部卡片（第一张）
+        if (cardIndex === 0) {
+          isTopCardVisible.value = true;
+        } else if (cardElements[cardIndex]) {
+          // 为下层卡片添加可见类
+          cardElements[cardIndex].classList.add('visible');
+          
+          // 动画完成后设置堆叠样式
+          setTimeout(() => {
+            cardElements[cardIndex].style.transform = `translateY(-${cardIndex * 10}px) rotate(${cardIndex * 2}deg)`;
+          }, 500); // 等待飞入动画完成
+        }
+      }, index * 300); // 每张卡片间隔300ms
+    });
+  });
 };
 
 const toggle = (form) => {
@@ -540,6 +576,8 @@ const toggle = (form) => {
     running.value = !running.value;
     nextTick(() => {
       reloadTagCanvas();
+      // 开始卡片堆叠动画
+      startCardStackAnimation();
     });
   } else {
     // 开始抽奖时只设置状态，不生成结果
@@ -783,7 +821,16 @@ const toggle = (form) => {
   height: 100%;
   perspective: 1000px;
   cursor: default;
-  transition: none; /* 移除过渡效果，避免自动翻转 */
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+  /* 初始状态：在屏幕右侧外 */
+  transform: translateX(150%);
+  opacity: 0;
+}
+
+/* 堆叠动画效果 */
+.stacked-card.visible {
+  transform: translateX(0);
+  opacity: 1;
 }
 
 .stacked-card.active {
