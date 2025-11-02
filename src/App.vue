@@ -100,6 +100,11 @@
             </div>
           </div>
         </div>
+        
+        <!-- 跳过翻卡按钮 -->
+        <div class="skip-button-container">
+          <button class="skip-button" @click="skipCardAnimation">跳过翻卡</button>
+        </div>
       </div>
     </transition>
     
@@ -493,6 +498,15 @@ const resetCardState = () => {
   isTopCardFlipped.value = false;
   isTopCardFlyingOut.value = false;
   cardStackAnimation.value = false;
+};
+
+// 跳过翻卡动画
+const skipCardAnimation = () => {
+  // 跳过所有卡片翻转动画，直接显示最终结果
+  showDrawCard.value = false;
+  setTimeout(() => {
+    showRes.value = true;
+  }, 300);
 };
 
 // 开始卡片堆叠动画
@@ -956,6 +970,37 @@ const toggle = (form) => {
   border: 4px solid #ffd700;
   object-fit: cover;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 跳过翻卡按钮样式 */
+.skip-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.skip-button {
+  padding: 10px 20px;
+  background-color: rgba(255, 215, 0, 0.9);
+  color: black;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.skip-button:hover {
+  background-color: #ffd700;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.skip-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 
