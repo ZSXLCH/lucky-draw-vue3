@@ -19,7 +19,7 @@
         抽奖配置
       </el-button>
     </header>
-    <div id="main" :class="{ mask: showRes }"></div>
+    <div id="main" :class="{ mask: showRes || showDrawCard }"></div>
     <div id="tags">
       <ul v-for="item in datas" :key="item.key">
         <li>
@@ -35,6 +35,74 @@
         </li>
       </ul>
     </div>
+    <!-- 堆叠卡片抽奖结果 -->
+    <transition name="fade">
+      <div v-show="showDrawCard" id="stackedCardContainer">
+        <div class="card-stack">
+          <!-- 只渲染顶部卡片，确保状态控制精确 -->
+          <div 
+            v-if="remainingCards.length > 0"
+            class="stacked-card active"
+            :class="{
+              'flipped': isTopCardFlipped,
+              'flying-out': isTopCardFlyingOut,
+              'visible': isTopCardVisible
+            }"
+            :style="{
+              zIndex: 1000,
+              transform: '',
+              boxShadow: '0 8px 32px rgba(255, 215, 0, 0.3)'
+            }"
+            @click="handleTopCardClick()"
+          >
+            <div class="card-inner">
+              <!-- 正面：点击揭晓 -->
+              <div class="card-front">
+                <div class="card-content">
+                  <h2>点击揭晓</h2>
+                  <p>{{ resArr.length - remainingCards.length + 1 }} / {{ resArr.length }}</p>
+                </div>
+              </div>
+              <!-- 背面：中奖信息 -->
+              <div class="card-back">
+                <div class="card-content">
+                  <p class="winner-name">{{ getWinnerInfo(remainingCards[0])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0])?.name || '' }}</p>
+                  <img v-if="getWinnerInfo(remainingCards[0])?.photo" :src="getWinnerInfo(remainingCards[0]).photo" class="winner-photo" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 渲染堆叠在下面的卡片（只显示视觉效果） -->
+          <div 
+            v-for="(cardKey, index) in remainingCards.slice(1)" 
+            :key="index"
+            class="stacked-card"
+            :style="{
+              zIndex: 999 - index,  // 恢复原来的z-index递减顺序
+              boxShadow: `0 ${(index + 1) * 2}px ${(index + 1) * 4}px rgba(0, 0, 0, 0.3)`
+            }"
+          >
+            <div class="card-inner">
+              <!-- 只显示点击揭晓的正面 -->
+              <div class="card-front">
+                <div class="card-content">
+                  <h2>点击揭晓</h2>
+                  <p>{{ resArr.length - remainingCards.length + index + 2 }} / {{ resArr.length }}</p>
+                </div>
+              </div>
+              <!-- 背面不需要渲染，因为下层卡片不会被翻转 -->
+              <div class="card-back">
+                <div class="card-content">
+                  <!-- 空白内容 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+    
     <transition name="bounce">
       <div id="resbox" v-show="showRes">
         <div class="resbox-header">
@@ -47,7 +115,6 @@
               v-for="(res, i) in currentPageData" 
               :key="i" 
               class="grid-item"
-
             >
               <span class="result-text">
                 {{ (list.find((d) => d.key === res) || {}).type || '-' }}：{{ (list.find((d) => d.key === res) || {}).name || res }}
@@ -125,6 +192,15 @@ const category = ref('');
 const audioPlaying = ref(false);
 const audioSrc = ref(bgaudio);
 
+// 堆叠卡片相关状态
+const showDrawCard = ref(false);
+const remainingCards = ref([]); // 剩余的卡片数组
+const isTopCardFlipped = ref(false);
+const isTopCardFlyingOut = ref(false);
+const cardStackAnimation = ref(false); // 卡片堆叠动画状态
+const animatedCards = ref([]); // 用于动画的卡片数组
+const isTopCardVisible = ref(false); // 顶部卡片是否可见
+
 // 分页相关数据
 const pageSize = 14; // 固定每页最多显示14个
 const currentPage = ref(1);
@@ -136,6 +212,16 @@ const currentPageData = computed(() => {
   const endIndex = startIndex + pageSize;
   return resArr.value.slice(startIndex, endIndex);
 });
+
+// 获取中奖者信息
+const getWinnerInfo = (winnerKey) => {
+  const winnerInfo = list.value.find((d) => d.key === winnerKey) || {};
+  const photoInfo = photos.value.find((d) => d.id === winnerKey);
+  return {
+    ...winnerInfo,
+    photo: photoInfo ? photoInfo.value : ''
+  };
+};
 
 // 处理页码变化
 const handlePageChange = (page) => {
@@ -368,20 +454,133 @@ const closeRes = () => {
   showRes.value = false;
 };
 
+// 处理顶部卡片点击
+const handleTopCardClick = () => {
+  if (!isTopCardFlipped.value) {
+    // 第一次点击：翻转卡片显示中奖者信息
+    isTopCardFlipped.value = true;
+  } else {
+    // 第二次点击：卡片向左飞出
+    isTopCardFlyingOut.value = true;
+    
+    // 动画完成后移除顶部卡片
+    setTimeout(() => {
+      // 先移除卡片
+      remainingCards.value.shift();
+      // 重置状态
+      isTopCardFlipped.value = false;
+      isTopCardFlyingOut.value = false;
+      
+      // 检查是否还有剩余卡片
+      if (remainingCards.value.length === 0) {
+        // 所有卡片都处理完了，显示完整中奖名单
+        setTimeout(() => {
+          showDrawCard.value = false;
+          showRes.value = true;
+        }, 300);
+      }
+      // 确保下一张卡片不会自动翻转
+      // 通过Vue的响应式系统，下一张卡片会自然成为新的顶部卡片且默认不翻转
+    }, 600); // 与CSS动画时间同步
+  }
+};
+
+// 重置卡片状态
+const resetCardState = () => {
+  showDrawCard.value = false;
+  remainingCards.value = [];
+  animatedCards.value = [];
+  isTopCardFlipped.value = false;
+  isTopCardFlyingOut.value = false;
+  cardStackAnimation.value = false;
+};
+
+// 开始卡片堆叠动画
+const startCardStackAnimation = () => {
+  // 重置顶部卡片可见性
+  isTopCardVisible.value = false;
+  
+  // 使用nextTick确保DOM已更新
+  nextTick(() => {
+    // 从最后一张开始依次添加飞入动画
+    remainingCards.value.forEach((cardKey, index) => {
+      setTimeout(() => {
+        // 使用更可靠的选择器
+        const cardElements = document.querySelectorAll('.stacked-card');
+        const cardIndex = remainingCards.value.length - index - 1; // 从最后一张开始
+        
+        // 特殊处理顶部卡片（第一张）
+        if (cardIndex === 0) {
+          isTopCardVisible.value = true;
+        } else if (cardElements[cardIndex]) {
+          // 为下层卡片添加可见类
+          cardElements[cardIndex].classList.add('visible');
+          
+          // 动画完成后设置堆叠样式
+          setTimeout(() => {
+            cardElements[cardIndex].style.transform = `translateY(-${cardIndex * 10}px) rotate(${cardIndex * 2}deg)`;
+          }, 500); // 等待飞入动画完成
+        }
+      }, index * 300); // 每张卡片间隔300ms
+    });
+  });
+};
+
 const toggle = (form) => {
   if (running.value) {
+    // 停止抽奖时的逻辑
     audioSrc.value = bgaudio;
     loadAudio();
+
+    // 只有在停止时才生成抽奖结果
+    if (form) {
+      const { number } = config.value;
+      const { category: cat, mode, qty, remain, allin } = form;
+      let num = 1;
+      if (mode === 1 || mode === 5) {
+        num = mode;
+      } else if (mode === 0) {
+        num = remain;
+      } else if (mode === 99) {
+        num = qty;
+      }
+      const resultArray = luckydrawHandler(
+        number,
+        allin ? [] : allresult.value,
+        num,
+        allin,
+        form.groupDraw,
+        list.value
+      );
+      resArr.value = resultArray;
+
+      category.value = cat;
+      if (!result.value[cat]) {
+        result.value[cat] = [];
+      }
+      const oldRes = result.value[cat] || [];
+      const data = Object.assign({}, result.value, {
+        [cat]: oldRes.concat(resultArray),
+      });
+      result.value = data;
+    }
 
     window.TagCanvas.SetSpeed('rootcanvas', speed());
     // 重置页码
     currentPage.value = 1;
-    showRes.value = true;
+    // 显示堆叠卡片效果
+    resetCardState();
+    // 初始化剩余卡片数组，复制resArr的值
+    remainingCards.value = [...resArr.value];
+    showDrawCard.value = true;
     running.value = !running.value;
     nextTick(() => {
       reloadTagCanvas();
+      // 开始卡片堆叠动画
+      startCardStackAnimation();
     });
   } else {
+    // 开始抽奖时只设置状态，不生成结果
     showRes.value = false;
     if (!form) {
       return;
@@ -389,36 +588,6 @@ const toggle = (form) => {
 
     audioSrc.value = beginaudio;
     loadAudio();
-
-    const { number } = config.value;
-    const { category: cat, mode, qty, remain, allin } = form;
-    let num = 1;
-    if (mode === 1 || mode === 5) {
-      num = mode;
-    } else if (mode === 0) {
-      num = remain;
-    } else if (mode === 99) {
-      num = qty;
-    }
-    const resultArray = luckydrawHandler(
-      number,
-      allin ? [] : allresult.value,
-      num,
-      allin,
-      form.groupDraw,
-      list.value
-    );
-    resArr.value = resultArray;
-
-    category.value = cat;
-    if (!result.value[cat]) {
-      result.value[cat] = [];
-    }
-    const oldRes = result.value[cat] || [];
-    const data = Object.assign({}, result.value, {
-      [cat]: oldRes.concat(resultArray),
-    });
-    result.value = data;
     window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
     running.value = !running.value;
   }
@@ -618,5 +787,184 @@ const toggle = (form) => {
     justify-content: center;
     margin-top: 10px;
   }
+}
+
+/* 堆叠卡片效果样式 */
+#stackedCardContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.card-stack {
+  position: relative;
+  width: 80%;
+  height: 60vh;
+  max-width: 900px;
+  max-height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stacked-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  perspective: 1000px;
+  cursor: default;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+  /* 初始状态：在屏幕右侧外 */
+  transform: translateX(150%);
+  opacity: 0;
+}
+
+/* 堆叠动画效果 */
+.stacked-card.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.stacked-card.active {
+  cursor: pointer;
+}
+
+.stacked-card:not(.active) {
+  cursor: default;
+  pointer-events: none;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  /* 只在添加flipped类时才有过渡效果 */
+}
+
+/* 只有在明确添加flipped类时才翻转 */
+.stacked-card.flipped .card-inner {
+  transform: rotateY(180deg);
+  transition: transform 0.6s;
+}
+
+/* 默认状态不翻转 */
+.card-inner {
+  transform: rotateY(0deg);
+}
+
+/* 飞出动画时保持翻转状态 */
+.stacked-card.flying-out .card-inner {
+  transform: rotateY(180deg);
+  transition: transform 0.6s;
+}
+
+.card-front,
+.card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+}
+
+/* 卡片正面（初始可见面）：点击揭晓 */
+.card-front {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  border: 4px solid #ffd700;
+  z-index: 2;
+}
+
+/* 卡片背面（翻转后可见面）：中奖信息 */
+.card-back {
+  background: linear-gradient(135deg, #16a085, #27ae60);
+  border: 4px solid #ffd700;
+  transform: rotateY(180deg);
+  z-index: 1;
+}
+
+/* 卡片飞出动画 */
+.stacked-card.flying-out {
+  animation: flyOutLeft 0.6s forwards;
+}
+
+@keyframes flyOutLeft {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+    z-index: 1000;
+  }
+  100% {
+    transform: translateX(-150%);
+    opacity: 0;
+    z-index: 0;
+  }
+}
+
+.card-content {
+  text-align: center;
+  color: white;
+  padding: 40px;
+}
+
+.card-front .card-content h2 {
+  font-size: 60px;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.card-front .card-content p {
+  font-size: 32px;
+  opacity: 0.9;
+}
+
+.winner-name {
+  /* 稍微增大字体大小，设置为卡片高度的1/2.4左右，同时限制最大值 */
+  font-size: min(25vh, 100px);
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  /* 确保文字可以自动换行 */
+  word-wrap: break-word;
+  /* 限制显示2行 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.winner-photo {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 4px solid #ffd700;
+  object-fit: cover;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+
+
+/* 淡入淡出过渡效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
