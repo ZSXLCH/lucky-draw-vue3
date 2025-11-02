@@ -931,10 +931,19 @@ const toggle = (form) => {
 }
 
 .winner-name {
-  font-size: 48px;
+  /* 稍微增大字体大小，设置为卡片高度的1/2.4左右，同时限制最大值 */
+  font-size: min(25vh, 100px);
   font-weight: bold;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  /* 确保文字可以自动换行 */
+  word-wrap: break-word;
+  /* 限制显示2行 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.2;
 }
 
 .winner-photo {
