@@ -915,19 +915,21 @@ const toggle = (form) => {
 
 .card-content {
   text-align: center;
-  color: white;
+  color: black;
   padding: 40px;
 }
 
 .card-front .card-content h2 {
   font-size: 60px;
   margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: black;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .card-front .card-content p {
   font-size: 32px;
   opacity: 0.9;
+  color: black;
 }
 
 .winner-name {
@@ -935,7 +937,8 @@ const toggle = (form) => {
   font-size: min(25vh, 100px);
   font-weight: bold;
   margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: black;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
   /* 确保文字可以自动换行 */
   word-wrap: break-word;
   /* 限制显示2行 */
