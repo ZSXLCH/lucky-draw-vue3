@@ -552,92 +552,25 @@ const startCardStackAnimation = () => {
 
 const toggle = (form) => {
   if (running.value) {
-    // 停止抽奖时的逻辑
+    // 停止抽奖：不再计算结果，直接展示堆叠卡片
     audioSrc.value = bgaudio;
     loadAudio();
-    
-    // 显示加载动画
-    showLoadingAnimation.value = true;
-    
-    // 随机选择一个加载文本
-    const randomTextIndex = Math.floor(Math.random() * loadingTexts.length);
-    loadingText.value = loadingTexts[randomTextIndex].main;
-    loadingSubText.value = loadingTexts[randomTextIndex].sub;
-    
-    // 使用setTimeout模拟处理时间，并添加文字变化增加悬念
-    let textChangeCount = 0;
-    const textChangeInterval = setInterval(() => {
-      textChangeCount++;
-      const nextIndex = (randomTextIndex + textChangeCount) % loadingTexts.length;
-      loadingText.value = loadingTexts[nextIndex].main;
-      loadingSubText.value = loadingTexts[nextIndex].sub;
-    }, 800);
+    window.TagCanvas.SetSpeed('rootcanvas', speed());
 
-    // 延迟执行抽奖结果计算，给用户一个视觉反馈
-    setTimeout(() => {
-      clearInterval(textChangeInterval);
-      
-      // 只有在停止时才生成抽奖结果
-      if (form) {
-        const { number } = config.value;
-        const { category: cat, mode, qty, remain, allin } = form;
-        let num = 1;
-        if (mode === 1 || mode === 5) {
-          num = mode;
-        } else if (mode === 0) {
-          num = remain;
-        } else if (mode === 99) {
-          num = qty;
-        }
-        const resultArray = luckydrawHandler(
-          number,
-          allin ? [] : allresult.value,
-          num,
-          allin,
-          form.groupDraw,
-          list.value
-        );
-        resArr.value = resultArray;
-
-        category.value = cat;
-        if (!result.value[cat]) {
-          result.value[cat] = [];
-        }
-        const oldRes = result.value[cat] || [];
-        const data = Object.assign({}, result.value, {
-          [cat]: oldRes.concat(resultArray),
-        });
-        result.value = data;
-      }
-
-      window.TagCanvas.SetSpeed('rootcanvas', speed());
-      // 重置页码
-      currentPage.value = 1;
-      
-      // 最后一个文本显示
-      loadingText.value = loadingTexts[loadingTexts.length - 1].main;
-      loadingSubText.value = loadingTexts[loadingTexts.length - 1].sub;
-      
-      // 再延迟一会儿，让用户看到最后的文本
-      setTimeout(() => {
-        // 隐藏加载动画
-        showLoadingAnimation.value = false;
-        
-        // 显示堆叠卡片效果
-        resetCardState();
-        // 初始化剩余卡片数组，复制resArr的值
-        remainingCards.value = [...resArr.value];
-        showDrawCard.value = true;
-        running.value = !running.value;
-        nextTick(() => {
-          reloadTagCanvas();
-          // 开始卡片堆叠动画
-          startCardStackAnimation();
-        });
-      }, 1000);
-    }, 2000); // 延迟2秒，给用户足够的视觉反馈时间
+    // 展示堆叠卡片动画
+    currentPage.value = 1;
+    showLoadingAnimation.value = false;
+    resetCardState();
+    remainingCards.value = [...resArr.value];
+    showDrawCard.value = true;
+    running.value = false;
+    nextTick(() => {
+      reloadTagCanvas();
+      startCardStackAnimation();
+    });
+    return;
   } else {
-    // 开始抽奖时只设置状态，不生成结果
+    // 开始抽奖：仅计算结果，不展示堆叠卡片
     showRes.value = false;
     if (!form) {
       return;
@@ -646,7 +579,47 @@ const toggle = (form) => {
     audioSrc.value = beginaudio;
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
-    running.value = !running.value;
+
+    // 计算抽奖结果
+    const { number } = config.value;
+    const { category: cat, mode, qty, remain, allin } = form;
+    let num = 1;
+    if (mode === 1 || mode === 5) {
+      num = mode;
+    } else if (mode === 0) {
+      num = remain;
+    } else if (mode === 99) {
+      num = qty;
+    }
+    const resultArray = luckydrawHandler(
+      number,
+      allin ? [] : allresult.value,
+      num,
+      allin,
+      form.groupDraw,
+      list.value
+    );
+    resArr.value = resultArray;
+
+    category.value = cat;
+    if (!result.value[cat]) {
+      result.value[cat] = [];
+    }
+    const oldRes = result.value[cat] || [];
+    const data = Object.assign({}, result.value, {
+      [cat]: oldRes.concat(resultArray),
+    });
+    result.value = data;
+
+    // 不展示堆叠卡片，等待停止时再展示
+    currentPage.value = 1;
+    showLoadingAnimation.value = false;
+    showDrawCard.value = false;
+    resetCardState();
+    running.value = true;
+    nextTick(() => {
+      reloadTagCanvas();
+    });
   }
 };
 </script>
