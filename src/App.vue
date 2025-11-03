@@ -435,10 +435,9 @@ const calculateTextHeight = () => {
   let baseSize = 20;
   
   // 根据总人数调整字体大小：人数越多，字体越小
-  if (totalPeople > 1000) {
-    baseSize = 10;
-  } else if (totalPeople > 500) {
-    baseSize = 12;
+  // 修改逻辑，使2000人时字体大小与400人时相同
+  if (totalPeople > 400) {
+    baseSize = 14; // 400人以上都使用相同大小
   } else if (totalPeople > 200) {
     baseSize = 14;
   } else if (totalPeople > 100) {
@@ -458,7 +457,7 @@ const startTagCanvas = () => {
   createCanvas();
   const textHeight = calculateTextHeight();
   window.TagCanvas.Start('rootcanvas', 'tags', {
-    textColour: null,
+    textColour: '#FFD700', // 金色
     initial: speed(),
     dragControl: 1,
     textHeight: textHeight,
@@ -652,7 +651,7 @@ const toggle = (form) => {
 #root {
   height: 100%;
   position: relative;
-  background-image: url('./assets/bg1.jpg');
+  background-image: url('./assets/bg.png');
   background-size: 100% 100%;
   background-position: center center;
   background-repeat: no-repeat;
