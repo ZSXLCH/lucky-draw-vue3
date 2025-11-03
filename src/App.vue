@@ -463,6 +463,10 @@ const startTagCanvas = () => {
     textHeight: textHeight,
     noSelect: true,
     lock: 'xy',
+    padding: 5, // 添加内边距，防止文字被裁剪
+    outlineMethod: 'colour', // 使用颜色描边
+    outlineColour: '#FFD700', // 描边颜色与文字颜色相同
+    outlineThickness: 2, // 描边厚度
   });
 };
 
