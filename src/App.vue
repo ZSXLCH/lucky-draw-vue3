@@ -696,26 +696,28 @@ const toggle = (form) => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 980px;
+  width: 90vw; /* 视口宽度，提升自适应比例 */
+  max-width: 1400px; /* 限制最大宽度，避免超宽 */
+  height: 92vh; /* 提升高度，避免内容需要滚动 */
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   z-index: 10000; /* 确保结果弹窗显示在最上层，高于右侧按钮的z-index: 9999 */
   .resbox-header {
       position: relative;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       width: 100%;
       .close-button {
         position: absolute;
         top: 0;
         right: 0; /* 从左上改为右上 */
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         background-color: #f00;
         color: #fff;
         border: none;
-        font-size: 24px;
+        font-size: 26px;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -726,10 +728,12 @@ const toggle = (form) => {
         }
       }
       p {
-          color: red;
-          font-size: 22px;
-          line-height: 30px;
+          color: #ffd700; /* 金色文字，提升与红色背景的对比度 */
+          font-size: 42px; /* 进一步增大标题字号 */
+          font-weight: 700;
+          line-height: 50px;
           margin: 0;
+          text-shadow: 0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2);
         }
     }
   .container {
@@ -776,17 +780,17 @@ const toggle = (form) => {
 <style lang="scss">
 #resbox {
   max-height: none;
-  overflow-y: visible;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
+  overflow: hidden; /* 禁用内部滚动，避免出现滚轮 */
+  padding: 20px; /* 更大的留白 */
+  background-color: #ff0000; /* 纯红色背景，不透明 */
   border-radius: 8px;
   
   .grid-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 14px; /* 更大的网格间距 */
     justify-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 28px; /* 更大的底部留白 */
     
     .grid-item {
       width: 100%;
@@ -794,14 +798,14 @@ const toggle = (form) => {
       
       .result-text {
           display: inline-block;
-          padding: 15px 20px;
-          font-size: 32px;
+          padding: 22px 28px; /* 更大的内边距 */
+          font-size: 52px; /* 进一步增大名单字体大小 */
           font-weight: bold;
-          color: #fff;
+          color: #ffd700;
           background-color: transparent; /* 透明背景 */
           border: 1px solid #ddd;
-          border-radius: 4px;
-          width: 90%;
+          border-radius: 8px; /* 更圆润 */
+          width: 94%; /* 更宽的内容区 */
           box-sizing: border-box;
           cursor: pointer;
           
@@ -815,7 +819,7 @@ const toggle = (form) => {
   .pagination-container {
     display: flex;
     justify-content: center;
-    margin-top: 10px;
+    margin-top: 14px; /* 更大的上边距 */
   }
 }
 
@@ -872,7 +876,7 @@ const toggle = (form) => {
   font-size: 28px;
   margin-bottom: 10px;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.5);
 }
 
 .loading-text p {
@@ -1002,33 +1006,32 @@ const toggle = (form) => {
 
 .card-content {
   text-align: center;
-  color: black;
+  color: #ffd700;
   padding: 40px;
+  text-shadow: 0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2);
 }
 
 .card-front .card-content h2 {
   font-size: 60px;
   margin-bottom: 20px;
-  color: black;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+  color: #ffd700;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
 }
 
 .card-front .card-content p {
   font-size: 32px;
   opacity: 0.9;
-  color: black;
+  color: #ffd700;
+  text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
 }
 
 .winner-name {
-  /* 稍微增大字体大小，设置为卡片高度的1/2.4左右，同时限制最大值 */
   font-size: min(25vh, 100px);
   font-weight: bold;
   margin-bottom: 20px;
-  color: black;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
-  /* 确保文字可以自动换行 */
+  color: #ffd700;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
   word-wrap: break-word;
-  /* 限制显示2行 */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
