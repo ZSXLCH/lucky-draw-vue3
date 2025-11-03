@@ -77,7 +77,7 @@
               <!-- 背面：中奖信息 -->
               <div class="card-back">
                 <div class="card-content">
-                  <p class="winner-name">{{ getWinnerInfo(remainingCards[0])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0])?.name || '' }}</p>
+                  <p class="winner-name">{{ getWinnerInfo(remainingCards[0])?.type || '-' }}: {{ getWinnerInfo(remainingCards[0])?.name || '' }}</p>
                   <img v-if="getWinnerInfo(remainingCards[0])?.photo" :src="getWinnerInfo(remainingCards[0]).photo" class="winner-photo" />
                 </div>
               </div>
@@ -698,7 +698,7 @@ const toggle = (form) => {
   left: 50%;
   width: 90vw; /* 视口宽度，提升自适应比例 */
   max-width: 1400px; /* 限制最大宽度，避免超宽 */
-  height: 92vh; /* 提升高度，避免内容需要滚动 */
+  height: 85vh; /* 原 92vh，稍微减小高度 */
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   z-index: 10000; /* 确保结果弹窗显示在最上层，高于右侧按钮的z-index: 9999 */
@@ -729,9 +729,9 @@ const toggle = (form) => {
       }
       p {
           color: #ffd700; /* 金色文字，提升与红色背景的对比度 */
-          font-size: 42px; /* 进一步增大标题字号 */
+          font-size: 36px; /* 原 42px，稍微减小标题字号 */
           font-weight: 700;
-          line-height: 50px;
+          line-height: 44px;
           margin: 0;
           text-shadow: 0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2);
         }
@@ -780,7 +780,8 @@ const toggle = (form) => {
 <style lang="scss">
 #resbox {
   max-height: none;
-  overflow: hidden; /* 禁用内部滚动，避免出现滚轮 */
+  overflow-y: auto; /* 允许内部滚动 */
+  overflow-x: hidden; /* 禁止水平滚动 */
   padding: 20px; /* 更大的留白 */
   background-color: #ff0000; /* 纯红色背景，不透明 */
   border-radius: 8px;
@@ -799,7 +800,7 @@ const toggle = (form) => {
       .result-text {
           display: inline-block;
           padding: 22px 28px; /* 更大的内边距 */
-          font-size: 52px; /* 进一步增大名单字体大小 */
+          font-size: 46px; /* 原 52px，稍微减小名单字体大小 */
           font-weight: bold;
           color: #ffd700;
           background-color: transparent; /* 透明背景 */
@@ -897,10 +898,10 @@ const toggle = (form) => {
 
 .card-stack {
   position: relative;
-  width: 80%;
-  height: 60vh;
-  max-width: 900px;
-  max-height: 600px;
+  width: 95%; /* 增大卡片容器宽度 */
+  height: 80vh; /* 增大卡片容器高度 */
+  max-width: 1300px; /* 更大的最大宽度 */
+  max-height: 900px; /* 更大的最大高度 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1012,31 +1013,30 @@ const toggle = (form) => {
 }
 
 .card-front .card-content h2 {
-  font-size: 60px;
+  font-size: 96px; /* 增大“点击揭晓”标题 */
   margin-bottom: 20px;
   color: #ffd700;
   text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
 }
 
 .card-front .card-content p {
-  font-size: 32px;
+  font-size: 54px; /* 增大进度“1/10”等文字 */
   opacity: 0.9;
   color: #ffd700;
   text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
 }
 
 .winner-name {
-  font-size: min(25vh, 100px);
+  font-size: min(30vh, 140px); /* 从 min(28vh, 130px) 略微增大 */
   font-weight: bold;
   margin-bottom: 20px;
   color: #ffd700;
   text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
-  word-wrap: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
   overflow: hidden;
-  line-height: 1.2;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 1.1;
 }
 
 .winner-photo {
