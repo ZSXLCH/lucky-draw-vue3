@@ -19,7 +19,7 @@
         抽奖配置
       </el-button>
     </header>
-    <div id="main" :class="{ mask: showRes || showDrawCard }"></div>
+    <div id="main" :class="{ mask: showRes || showDrawCard || showLoadingAnimation }"></div>
     <div id="tags">
       <ul v-for="item in datas" :key="item.key">
         <li>
@@ -35,6 +35,17 @@
         </li>
       </ul>
     </div>
+    
+    <!-- 抽奖结果计算中的过渡动画 -->
+    <transition name="fade">
+      <div v-if="showLoadingAnimation" class="loading-animation-container">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+          <h2>{{ loadingText }}</h2>
+          <p>{{ loadingSubText }}</p>
+        </div>
+      </div>
+    </transition>
     <!-- 堆叠卡片抽奖结果 -->
     <transition name="fade">
       <div v-show="showDrawCard" id="stackedCardContainer">
@@ -191,6 +202,16 @@ const resArr = ref([]);
 const category = ref('');
 const audioPlaying = ref(false);
 const audioSrc = ref(bgaudio);
+const showLoadingAnimation = ref(false);
+const loadingText = ref('正在抽取幸运者');
+const loadingSubText = ref('请稍候...');
+const loadingTexts = [
+  { main: '正在抽取幸运者', sub: '请稍候...' },
+  { main: '正在打乱名单', sub: '谁会是幸运儿？' },
+  { main: '正在计算概率', sub: '好运即将降临...' },
+  { main: '即将揭晓结果', sub: '准备好了吗？' },
+  { main: '抽奖结果出炉', sub: '恭喜以下幸运儿！' }
+];
 
 // 堆叠卡片相关状态
 const showDrawCard = ref(false);
@@ -531,54 +552,87 @@ const toggle = (form) => {
     // 停止抽奖时的逻辑
     audioSrc.value = bgaudio;
     loadAudio();
+    
+    // 显示加载动画
+    showLoadingAnimation.value = true;
+    
+    // 随机选择一个加载文本
+    const randomTextIndex = Math.floor(Math.random() * loadingTexts.length);
+    loadingText.value = loadingTexts[randomTextIndex].main;
+    loadingSubText.value = loadingTexts[randomTextIndex].sub;
+    
+    // 使用setTimeout模拟处理时间，并添加文字变化增加悬念
+    let textChangeCount = 0;
+    const textChangeInterval = setInterval(() => {
+      textChangeCount++;
+      const nextIndex = (randomTextIndex + textChangeCount) % loadingTexts.length;
+      loadingText.value = loadingTexts[nextIndex].main;
+      loadingSubText.value = loadingTexts[nextIndex].sub;
+    }, 800);
 
-    // 只有在停止时才生成抽奖结果
-    if (form) {
-      const { number } = config.value;
-      const { category: cat, mode, qty, remain, allin } = form;
-      let num = 1;
-      if (mode === 1 || mode === 5) {
-        num = mode;
-      } else if (mode === 0) {
-        num = remain;
-      } else if (mode === 99) {
-        num = qty;
+    // 延迟执行抽奖结果计算，给用户一个视觉反馈
+    setTimeout(() => {
+      clearInterval(textChangeInterval);
+      
+      // 只有在停止时才生成抽奖结果
+      if (form) {
+        const { number } = config.value;
+        const { category: cat, mode, qty, remain, allin } = form;
+        let num = 1;
+        if (mode === 1 || mode === 5) {
+          num = mode;
+        } else if (mode === 0) {
+          num = remain;
+        } else if (mode === 99) {
+          num = qty;
+        }
+        const resultArray = luckydrawHandler(
+          number,
+          allin ? [] : allresult.value,
+          num,
+          allin,
+          form.groupDraw,
+          list.value
+        );
+        resArr.value = resultArray;
+
+        category.value = cat;
+        if (!result.value[cat]) {
+          result.value[cat] = [];
+        }
+        const oldRes = result.value[cat] || [];
+        const data = Object.assign({}, result.value, {
+          [cat]: oldRes.concat(resultArray),
+        });
+        result.value = data;
       }
-      const resultArray = luckydrawHandler(
-        number,
-        allin ? [] : allresult.value,
-        num,
-        allin,
-        form.groupDraw,
-        list.value
-      );
-      resArr.value = resultArray;
 
-      category.value = cat;
-      if (!result.value[cat]) {
-        result.value[cat] = [];
-      }
-      const oldRes = result.value[cat] || [];
-      const data = Object.assign({}, result.value, {
-        [cat]: oldRes.concat(resultArray),
-      });
-      result.value = data;
-    }
-
-    window.TagCanvas.SetSpeed('rootcanvas', speed());
-    // 重置页码
-    currentPage.value = 1;
-    // 显示堆叠卡片效果
-    resetCardState();
-    // 初始化剩余卡片数组，复制resArr的值
-    remainingCards.value = [...resArr.value];
-    showDrawCard.value = true;
-    running.value = !running.value;
-    nextTick(() => {
-      reloadTagCanvas();
-      // 开始卡片堆叠动画
-      startCardStackAnimation();
-    });
+      window.TagCanvas.SetSpeed('rootcanvas', speed());
+      // 重置页码
+      currentPage.value = 1;
+      
+      // 最后一个文本显示
+      loadingText.value = loadingTexts[loadingTexts.length - 1].main;
+      loadingSubText.value = loadingTexts[loadingTexts.length - 1].sub;
+      
+      // 再延迟一会儿，让用户看到最后的文本
+      setTimeout(() => {
+        // 隐藏加载动画
+        showLoadingAnimation.value = false;
+        
+        // 显示堆叠卡片效果
+        resetCardState();
+        // 初始化剩余卡片数组，复制resArr的值
+        remainingCards.value = [...resArr.value];
+        showDrawCard.value = true;
+        running.value = !running.value;
+        nextTick(() => {
+          reloadTagCanvas();
+          // 开始卡片堆叠动画
+          startCardStackAnimation();
+        });
+      }, 1000);
+    }, 2000); // 延迟2秒，给用户足够的视觉反馈时间
   } else {
     // 开始抽奖时只设置状态，不生成结果
     showRes.value = false;
@@ -802,6 +856,63 @@ const toggle = (form) => {
   align-items: center;
   z-index: 10001;
   background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* 加载动画容器 */
+.loading-animation-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+
+/* 旋转加载动画 */
+.loading-spinner {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 30px;
+  border: 8px solid rgba(255, 215, 0, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffd700;
+  animation: spin 1s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+/* 加载文字样式 */
+.loading-text {
+  text-align: center;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-text h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+}
+
+.loading-text p {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+/* 动画关键帧 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .card-stack {
