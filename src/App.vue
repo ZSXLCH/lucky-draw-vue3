@@ -77,7 +77,7 @@
               <!-- 背面：中奖信息 -->
               <div class="card-back">
                 <div class="card-content">
-                  <p class="winner-name">{{ getWinnerInfo(remainingCards[0])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0])?.name || '' }}</p>
+                  <p class="winner-name">{{ getWinnerInfo(remainingCards[0])?.type || '-' }}: {{ getWinnerInfo(remainingCards[0])?.name || '' }}</p>
                   <img v-if="getWinnerInfo(remainingCards[0])?.photo" :src="getWinnerInfo(remainingCards[0]).photo" class="winner-photo" />
                 </div>
               </div>
@@ -435,10 +435,9 @@ const calculateTextHeight = () => {
   let baseSize = 20;
   
   // 根据总人数调整字体大小：人数越多，字体越小
-  if (totalPeople > 1000) {
-    baseSize = 10;
-  } else if (totalPeople > 500) {
-    baseSize = 12;
+  // 修改逻辑，使2000人时字体大小与400人时相同
+  if (totalPeople > 400) {
+    baseSize = 14; // 400人以上都使用相同大小
   } else if (totalPeople > 200) {
     baseSize = 14;
   } else if (totalPeople > 100) {
@@ -458,12 +457,16 @@ const startTagCanvas = () => {
   createCanvas();
   const textHeight = calculateTextHeight();
   window.TagCanvas.Start('rootcanvas', 'tags', {
-    textColour: null,
+    textColour: '#FFD700', // 金色
     initial: speed(),
     dragControl: 1,
     textHeight: textHeight,
     noSelect: true,
     lock: 'xy',
+    padding: 5, // 添加内边距，防止文字被裁剪
+    outlineMethod: 'colour', // 使用颜色描边
+    outlineColour: '#FFD700', // 描边颜色与文字颜色相同
+    outlineThickness: 2, // 描边厚度
   });
 };
 
@@ -549,92 +552,25 @@ const startCardStackAnimation = () => {
 
 const toggle = (form) => {
   if (running.value) {
-    // 停止抽奖时的逻辑
+    // 停止抽奖：不再计算结果，直接展示堆叠卡片
     audioSrc.value = bgaudio;
     loadAudio();
-    
-    // 显示加载动画
-    showLoadingAnimation.value = true;
-    
-    // 随机选择一个加载文本
-    const randomTextIndex = Math.floor(Math.random() * loadingTexts.length);
-    loadingText.value = loadingTexts[randomTextIndex].main;
-    loadingSubText.value = loadingTexts[randomTextIndex].sub;
-    
-    // 使用setTimeout模拟处理时间，并添加文字变化增加悬念
-    let textChangeCount = 0;
-    const textChangeInterval = setInterval(() => {
-      textChangeCount++;
-      const nextIndex = (randomTextIndex + textChangeCount) % loadingTexts.length;
-      loadingText.value = loadingTexts[nextIndex].main;
-      loadingSubText.value = loadingTexts[nextIndex].sub;
-    }, 800);
+    window.TagCanvas.SetSpeed('rootcanvas', speed());
 
-    // 延迟执行抽奖结果计算，给用户一个视觉反馈
-    setTimeout(() => {
-      clearInterval(textChangeInterval);
-      
-      // 只有在停止时才生成抽奖结果
-      if (form) {
-        const { number } = config.value;
-        const { category: cat, mode, qty, remain, allin } = form;
-        let num = 1;
-        if (mode === 1 || mode === 5) {
-          num = mode;
-        } else if (mode === 0) {
-          num = remain;
-        } else if (mode === 99) {
-          num = qty;
-        }
-        const resultArray = luckydrawHandler(
-          number,
-          allin ? [] : allresult.value,
-          num,
-          allin,
-          form.groupDraw,
-          list.value
-        );
-        resArr.value = resultArray;
-
-        category.value = cat;
-        if (!result.value[cat]) {
-          result.value[cat] = [];
-        }
-        const oldRes = result.value[cat] || [];
-        const data = Object.assign({}, result.value, {
-          [cat]: oldRes.concat(resultArray),
-        });
-        result.value = data;
-      }
-
-      window.TagCanvas.SetSpeed('rootcanvas', speed());
-      // 重置页码
-      currentPage.value = 1;
-      
-      // 最后一个文本显示
-      loadingText.value = loadingTexts[loadingTexts.length - 1].main;
-      loadingSubText.value = loadingTexts[loadingTexts.length - 1].sub;
-      
-      // 再延迟一会儿，让用户看到最后的文本
-      setTimeout(() => {
-        // 隐藏加载动画
-        showLoadingAnimation.value = false;
-        
-        // 显示堆叠卡片效果
-        resetCardState();
-        // 初始化剩余卡片数组，复制resArr的值
-        remainingCards.value = [...resArr.value];
-        showDrawCard.value = true;
-        running.value = !running.value;
-        nextTick(() => {
-          reloadTagCanvas();
-          // 开始卡片堆叠动画
-          startCardStackAnimation();
-        });
-      }, 1000);
-    }, 2000); // 延迟2秒，给用户足够的视觉反馈时间
+    // 展示堆叠卡片动画
+    currentPage.value = 1;
+    showLoadingAnimation.value = false;
+    resetCardState();
+    remainingCards.value = [...resArr.value];
+    showDrawCard.value = true;
+    running.value = false;
+    nextTick(() => {
+      reloadTagCanvas();
+      startCardStackAnimation();
+    });
+    return;
   } else {
-    // 开始抽奖时只设置状态，不生成结果
+    // 开始抽奖：仅计算结果，不展示堆叠卡片
     showRes.value = false;
     if (!form) {
       return;
@@ -643,7 +579,47 @@ const toggle = (form) => {
     audioSrc.value = beginaudio;
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', [5, 1]);
-    running.value = !running.value;
+
+    // 计算抽奖结果
+    const { number } = config.value;
+    const { category: cat, mode, qty, remain, allin } = form;
+    let num = 1;
+    if (mode === 1 || mode === 5) {
+      num = mode;
+    } else if (mode === 0) {
+      num = remain;
+    } else if (mode === 99) {
+      num = qty;
+    }
+    const resultArray = luckydrawHandler(
+      number,
+      allin ? [] : allresult.value,
+      num,
+      allin,
+      form.groupDraw,
+      list.value
+    );
+    resArr.value = resultArray;
+
+    category.value = cat;
+    if (!result.value[cat]) {
+      result.value[cat] = [];
+    }
+    const oldRes = result.value[cat] || [];
+    const data = Object.assign({}, result.value, {
+      [cat]: oldRes.concat(resultArray),
+    });
+    result.value = data;
+
+    // 不展示堆叠卡片，等待停止时再展示
+    currentPage.value = 1;
+    showLoadingAnimation.value = false;
+    showDrawCard.value = false;
+    resetCardState();
+    running.value = true;
+    nextTick(() => {
+      reloadTagCanvas();
+    });
   }
 };
 </script>
@@ -652,7 +628,7 @@ const toggle = (form) => {
 #root {
   height: 100%;
   position: relative;
-  background-image: url('./assets/bg1.jpg');
+  background-image: url('./assets/bg.png');
   background-size: 100% 100%;
   background-position: center center;
   background-repeat: no-repeat;
@@ -720,26 +696,28 @@ const toggle = (form) => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 980px;
+  width: 90vw; /* 视口宽度，提升自适应比例 */
+  max-width: 1400px; /* 限制最大宽度，避免超宽 */
+  height: 85vh; /* 原 92vh，稍微减小高度 */
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   z-index: 10000; /* 确保结果弹窗显示在最上层，高于右侧按钮的z-index: 9999 */
   .resbox-header {
       position: relative;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       width: 100%;
       .close-button {
         position: absolute;
         top: 0;
         right: 0; /* 从左上改为右上 */
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         background-color: #f00;
         color: #fff;
         border: none;
-        font-size: 24px;
+        font-size: 26px;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -750,10 +728,12 @@ const toggle = (form) => {
         }
       }
       p {
-          color: red;
-          font-size: 22px;
-          line-height: 30px;
+          color: #ffd700; /* 金色文字，提升与红色背景的对比度 */
+          font-size: 36px; /* 原 42px，稍微减小标题字号 */
+          font-weight: 700;
+          line-height: 44px;
           margin: 0;
+          text-shadow: 0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2);
         }
     }
   .container {
@@ -800,17 +780,18 @@ const toggle = (form) => {
 <style lang="scss">
 #resbox {
   max-height: none;
-  overflow-y: visible;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
+  overflow-y: auto; /* 允许内部滚动 */
+  overflow-x: hidden; /* 禁止水平滚动 */
+  padding: 20px; /* 更大的留白 */
+  background-color: #ff0000; /* 纯红色背景，不透明 */
   border-radius: 8px;
   
   .grid-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 14px; /* 更大的网格间距 */
     justify-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 28px; /* 更大的底部留白 */
     
     .grid-item {
       width: 100%;
@@ -818,14 +799,14 @@ const toggle = (form) => {
       
       .result-text {
           display: inline-block;
-          padding: 15px 20px;
-          font-size: 32px;
+          padding: 22px 28px; /* 更大的内边距 */
+          font-size: 46px; /* 原 52px，稍微减小名单字体大小 */
           font-weight: bold;
-          color: #fff;
+          color: #ffd700;
           background-color: transparent; /* 透明背景 */
           border: 1px solid #ddd;
-          border-radius: 4px;
-          width: 90%;
+          border-radius: 8px; /* 更圆润 */
+          width: 94%; /* 更宽的内容区 */
           box-sizing: border-box;
           cursor: pointer;
           
@@ -839,7 +820,7 @@ const toggle = (form) => {
   .pagination-container {
     display: flex;
     justify-content: center;
-    margin-top: 10px;
+    margin-top: 14px; /* 更大的上边距 */
   }
 }
 
@@ -896,7 +877,7 @@ const toggle = (form) => {
   font-size: 28px;
   margin-bottom: 10px;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.5);
 }
 
 .loading-text p {
@@ -917,10 +898,10 @@ const toggle = (form) => {
 
 .card-stack {
   position: relative;
-  width: 80%;
-  height: 60vh;
-  max-width: 900px;
-  max-height: 600px;
+  width: 95%; /* 增大卡片容器宽度 */
+  height: 80vh; /* 增大卡片容器高度 */
+  max-width: 1300px; /* 更大的最大宽度 */
+  max-height: 900px; /* 更大的最大高度 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1026,38 +1007,36 @@ const toggle = (form) => {
 
 .card-content {
   text-align: center;
-  color: black;
+  color: #ffd700;
   padding: 40px;
+  text-shadow: 0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2);
 }
 
 .card-front .card-content h2 {
-  font-size: 60px;
+  font-size: 96px; /* 增大“点击揭晓”标题 */
   margin-bottom: 20px;
-  color: black;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+  color: #ffd700;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
 }
 
 .card-front .card-content p {
-  font-size: 32px;
+  font-size: 54px; /* 增大进度“1/10”等文字 */
   opacity: 0.9;
-  color: black;
+  color: #ffd700;
+  text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
 }
 
 .winner-name {
-  /* 稍微增大字体大小，设置为卡片高度的1/2.4左右，同时限制最大值 */
-  font-size: min(25vh, 100px);
+  font-size: min(30vh, 140px); /* 从 min(28vh, 130px) 略微增大 */
   font-weight: bold;
   margin-bottom: 20px;
-  color: black;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
-  /* 确保文字可以自动换行 */
-  word-wrap: break-word;
-  /* 限制显示2行 */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  color: #ffd700;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
+  white-space: nowrap;
   overflow: hidden;
-  line-height: 1.2;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 1.1;
 }
 
 .winner-photo {
