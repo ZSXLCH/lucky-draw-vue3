@@ -56,7 +56,7 @@ const message = computed(() => {
     font-size: 16px;
     
     .title {
-      color: #ccc;
+      color: #ffd700;
     }
     
     .value {
@@ -65,7 +65,7 @@ const message = computed(() => {
     
     &.actiname {
       .title {
-        color: red;
+        color: #ffd700;
         font-size: 20px;
       }
     }

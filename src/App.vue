@@ -557,17 +557,23 @@ const toggle = (form) => {
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', speed());
 
-    // 展示堆叠卡片动画
+    // 展示悬念过渡动画（1秒），之后再展示堆叠卡片
     currentPage.value = 1;
-    showLoadingAnimation.value = false;
     resetCardState();
     remainingCards.value = [...resArr.value];
-    showDrawCard.value = true;
     running.value = false;
-    nextTick(() => {
-      reloadTagCanvas();
-      startCardStackAnimation();
-    });
+    // 设置过渡文字并显示
+    loadingText.value = '即将揭晓结果';
+    loadingSubText.value = '准备好了吗？';
+    showLoadingAnimation.value = true;
+    setTimeout(() => {
+      showLoadingAnimation.value = false;
+      showDrawCard.value = true;
+      nextTick(() => {
+        reloadTagCanvas();
+        startCardStackAnimation();
+      });
+    }, 1000);
     return;
   } else {
     // 开始抽奖：仅计算结果，不展示堆叠卡片
@@ -648,22 +654,25 @@ const toggle = (form) => {
       z-index: 9999;
       &.con {
         right: 20px;
+        color: #ffd700; /* 顶栏文本按钮金色 */
       }
       &.res {
         right: 100px;
+        color: #ffd700; /* 顶栏文本按钮金色 */
       }
       &.audio {
         left: 20px;
         width: 40px;
         height: 40px;
         line-height: 40px;
-        border: 1px solid #fff;
+        border: 1px solid #ffd700; /* 金色边框 */
         border-radius: 50%;
         padding: 0;
         text-align: center;
         .iconfont {
           position: relative;
           left: 1px;
+          color: #ffd700; /* 金色图标 */
         }
       }
     }
@@ -869,20 +878,22 @@ const toggle = (form) => {
 
 /* 加载文字样式 */
 .loading-text {
+  color: #fff;
   text-align: center;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse 1s ease-in-out infinite;
 }
 
 .loading-text h2 {
-  font-size: 28px;
-  margin-bottom: 10px;
+  font-size: 60px;
+  margin: 0 0 10px;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.5);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
 }
 
 .loading-text p {
-  font-size: 18px;
-  opacity: 0.8;
+  font-size: 24px;
+  margin: 0;
+  color: #fff;
 }
 
 /* 动画关键帧 */
