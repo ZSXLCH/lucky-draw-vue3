@@ -537,6 +537,15 @@ const exportListExcel = () => {
     margin-top: 20px;
     margin-left: 0px;
   }
+  .el-button {
+    color: #ffd700; /* 按钮文字金色 */
+    background-color: #ff0000; /* 按钮背景红色 */
+    border-color: #ff0000; /* 按钮边框红色 */
+    &:hover {
+      background-color: #cc0000; /* 鼠标悬停时背景深红色 */
+      border-color: #cc0000; /* 鼠标悬停时边框深红色 */
+    }
+  }
 }
 
 .tool {
