@@ -517,17 +517,23 @@ const toggle = (form) => {
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', speed());
 
-    // 展示堆叠卡片动画
+    // 展示悬念过渡动画（1.5秒），之后再展示首张卡片飞入
     currentPage.value = 1;
-    showLoadingAnimation.value = false;
     resetCardState();
     remainingCards.value = [...resArr.value];
-    showDrawCard.value = true;
     running.value = false;
-    nextTick(() => {
-      reloadTagCanvas();
-      startCardStackAnimation();
-    });
+    // 设置过渡文字并显示
+    loadingText.value = '即将揭晓结果';
+    loadingSubText.value = '准备好了吗？';
+    showLoadingAnimation.value = true;
+    setTimeout(() => {
+      showLoadingAnimation.value = false;
+      showDrawCard.value = true;
+      nextTick(() => {
+        reloadTagCanvas();
+        startCardStackAnimation();
+      });
+    }, 800);
     return;
   } else {
     // 开始抽奖：仅计算结果，不展示堆叠卡片
@@ -833,19 +839,19 @@ const toggle = (form) => {
 /* 加载文字样式 */
 .loading-text {
   text-align: center;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse 0.8s ease-in-out infinite;
 }
 
 .loading-text h2 {
-  font-size: 28px;
-  margin-bottom: 10px;
+  font-size: 60px; /* 文字更大，提升悬念感 */
+  margin-bottom: 12px;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.5);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.8), 0 0 24px rgba(255, 215, 0, 0.6);
 }
 
 .loading-text p {
-  font-size: 18px;
-  opacity: 0.8;
+  font-size: 24px; /* 副标题也稍微增大 */
+  opacity: 0.9;
 }
 
 /* 动画关键帧 */
