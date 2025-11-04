@@ -20,7 +20,7 @@ export const useLuckyStore = defineStore('lucky', {
     
     return {
       config: {
-        name: '抽奖',
+        name: '抽奖环节',
         number: 70
       },
       result: {},
@@ -33,7 +33,7 @@ export const useLuckyStore = defineStore('lucky', {
   actions: {
     setClearConfig() {
       this.config = {
-        name: '抽奖',
+        name: '抽奖环节',
         number: 70
       };
       this.newLottery = [];
@@ -61,7 +61,7 @@ export const useLuckyStore = defineStore('lucky', {
     },
     setClearStore() {
       this.config = {
-        name: '抽奖',
+        name: '抽奖环节',
         number: 70
       };
       this.result = {};

@@ -608,22 +608,25 @@ const toggle = (form) => {
       z-index: 9999;
       &.con {
         right: 20px;
+        color: #ffd700;
       }
       &.res {
         right: 100px;
+        color: #ffd700;
       }
       &.audio {
         left: 20px;
         width: 40px;
         height: 40px;
         line-height: 40px;
-        border: 1px solid #fff;
+        border: 1px solid #ffd700;
         border-radius: 50%;
         padding: 0;
         text-align: center;
         .iconfont {
           position: relative;
           left: 1px;
+          color: #ffd700;
         }
       }
     }
