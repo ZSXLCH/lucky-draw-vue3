@@ -83,33 +83,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- 渲染堆叠在下面的卡片（只显示视觉效果） -->
-          <div 
-            v-for="(cardKey, index) in remainingCards.slice(1)" 
-            :key="index"
-            class="stacked-card"
-            :style="{
-              zIndex: 999 - index,  // 恢复原来的z-index递减顺序
-              boxShadow: `0 ${(index + 1) * 2}px ${(index + 1) * 4}px rgba(0, 0, 0, 0.3)`
-            }"
-          >
-            <div class="card-inner">
-              <!-- 只显示点击揭晓的正面 -->
-              <div class="card-front">
-                <div class="card-content">
-                  <h2>点击揭晓</h2>
-                  <p>{{ resArr.length - remainingCards.length + index + 2 }} / {{ resArr.length }}</p>
-                </div>
-              </div>
-              <!-- 背面不需要渲染，因为下层卡片不会被翻转 -->
-              <div class="card-back">
-                <div class="card-content">
-                  <!-- 空白内容 -->
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </transition>
@@ -502,6 +475,15 @@ const handleTopCardClick = () => {
           showDrawCard.value = false;
           showRes.value = true;
         }, 300);
+      } else {
+        // 准备下一张卡片的入场动画：先隐藏，再触发右入
+        isTopCardVisible.value = false;
+        nextTick(() => {
+          // 小延迟，确保DOM已更新到新顶部卡片
+          setTimeout(() => {
+            isTopCardVisible.value = true;
+          }, 20);
+        });
       }
       // 确保下一张卡片不会自动翻转
       // 通过Vue的响应式系统，下一张卡片会自然成为新的顶部卡片且默认不翻转
@@ -519,34 +501,12 @@ const resetCardState = () => {
   cardStackAnimation.value = false;
 };
 
-// 开始卡片堆叠动画
+// 开始卡片入场动画（单卡顺序右入）
 const startCardStackAnimation = () => {
-  // 重置顶部卡片可见性
+  // 只控制顶部卡片的可见性，从右侧飞入
   isTopCardVisible.value = false;
-  
-  // 使用nextTick确保DOM已更新
   nextTick(() => {
-    // 从最后一张开始依次添加飞入动画
-    remainingCards.value.forEach((cardKey, index) => {
-      setTimeout(() => {
-        // 使用更可靠的选择器
-        const cardElements = document.querySelectorAll('.stacked-card');
-        const cardIndex = remainingCards.value.length - index - 1; // 从最后一张开始
-        
-        // 特殊处理顶部卡片（第一张）
-        if (cardIndex === 0) {
-          isTopCardVisible.value = true;
-        } else if (cardElements[cardIndex]) {
-          // 为下层卡片添加可见类
-          cardElements[cardIndex].classList.add('visible');
-          
-          // 动画完成后设置堆叠样式
-          setTimeout(() => {
-            cardElements[cardIndex].style.transform = `translateY(-${cardIndex * 10}px) rotate(${cardIndex * 2}deg)`;
-          }, 500); // 等待飞入动画完成
-        }
-      }, index * 300); // 每张卡片间隔300ms
-    });
+    isTopCardVisible.value = true;
   });
 };
 
