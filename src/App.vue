@@ -196,7 +196,7 @@ const animatedCards = ref([]); // 用于动画的卡片数组
 const isTopCardVisible = ref(false); // 顶部卡片是否可见
 
 // 分页相关数据
-const pageSize = 14; // 固定每页最多显示14个
+const pageSize = 8; // 固定每页最多显示8个
 const currentPage = ref(1);
 
 // 计算属性
@@ -667,7 +667,8 @@ const toggle = (form) => {
   left: 50%;
   width: 90vw; /* 视口宽度，提升自适应比例 */
   max-width: 1400px; /* 限制最大宽度，避免超宽 */
-  height: 85vh; /* 原 92vh，稍微减小高度 */
+  height: auto; /* 自适应内容高度 */
+  max-height: 90vh; /* 最大高度，防止超出视口 */
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   z-index: 10000; /* 确保结果弹窗显示在最上层，高于右侧按钮的z-index: 9999 */
@@ -748,9 +749,8 @@ const toggle = (form) => {
 
 <style lang="scss">
 #resbox {
-  max-height: none;
-  overflow-y: auto; /* 允许内部滚动 */
-  overflow-x: hidden; /* 禁止水平滚动 */
+  max-height: 90vh; /* 限制最大高度，防止滚动 */
+  overflow: hidden; /* 禁止滚动条 */
   padding: 20px; /* 更大的留白 */
   background-color: #ff0000; /* 纯红色背景，不透明 */
   border-radius: 8px;
@@ -769,7 +769,7 @@ const toggle = (form) => {
       .result-text {
           display: inline-block;
           padding: 22px 28px; /* 更大的内边距 */
-          font-size: 46px; /* 原 52px，稍微减小名单字体大小 */
+          font-size: clamp(38px, 7vh, 72px); /* 自适应提升字号 */
           font-weight: bold;
           color: #ffd700;
           background-color: transparent; /* 透明背景 */
