@@ -223,7 +223,7 @@ const animatedCards = ref([]); // 用于动画的卡片数组
 const isTopCardVisible = ref(false); // 顶部卡片是否可见
 
 // 分页相关数据
-const pageSize = 14; // 固定每页最多显示14个
+const pageSize = 8; // 固定每页最多显示8个
 const currentPage = ref(1);
 
 // 计算属性
@@ -707,7 +707,8 @@ const toggle = (form) => {
   left: 50%;
   width: 90vw; /* 视口宽度，提升自适应比例 */
   max-width: 1400px; /* 限制最大宽度，避免超宽 */
-  height: 85vh; /* 原 92vh，稍微减小高度 */
+  height: auto; /* 自适应内容高度，避免底部空位 */
+  max-height: 85vh; /* 高度上限，防止过高 */
   transform: translateX(-50%) translateY(-50%);
   text-align: center;
   z-index: 10000; /* 确保结果弹窗显示在最上层，高于右侧按钮的z-index: 9999 */
@@ -789,18 +790,17 @@ const toggle = (form) => {
 <style lang="scss">
 #resbox {
   max-height: none;
-  overflow-y: auto; /* 允许内部滚动 */
-  overflow-x: hidden; /* 禁止水平滚动 */
-  padding: 20px; /* 更大的留白 */
+  overflow: hidden; /* 移除内部滚动条 */
+  padding: 12px; /* 缩小内边距，给内容更多空间 */
   background-color: #ff0000; /* 纯红色背景，不透明 */
   border-radius: 8px;
   
   .grid-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 14px; /* 更大的网格间距 */
+    gap: 10px; /* 更紧凑的间距，腾出内容空间 */
     justify-items: center;
-    margin-bottom: 28px; /* 更大的底部留白 */
+    margin-bottom: 24px; /* 合理留白 */
     
     .grid-item {
       width: 100%;
@@ -808,14 +808,14 @@ const toggle = (form) => {
       
       .result-text {
           display: inline-block;
-          padding: 22px 28px; /* 更大的内边距 */
-          font-size: 46px; /* 原 52px，稍微减小名单字体大小 */
+          padding: 18px 24px; /* 合理内边距以适配行高 */
+          font-size: min(6vh, 4vw, 64px); /* 视口自适应，尽可能大 */
           font-weight: bold;
           color: #ffd700;
           background-color: transparent; /* 透明背景 */
           border: 1px solid #ddd;
           border-radius: 8px; /* 更圆润 */
-          width: 94%; /* 更宽的内容区 */
+          width: 100%; /* 充分利用栅格宽度 */
           box-sizing: border-box;
           cursor: pointer;
           
@@ -829,7 +829,7 @@ const toggle = (form) => {
   .pagination-container {
     display: flex;
     justify-content: center;
-    margin-top: 14px; /* 更大的上边距 */
+    margin-top: 12px; /* 合理上边距 */
   }
 }
 
