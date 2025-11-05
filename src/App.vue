@@ -557,23 +557,17 @@ const toggle = (form) => {
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', speed());
 
-    // 展示悬念过渡动画（1秒），之后再展示堆叠卡片
+    // 直接展示堆叠卡片（移除过渡动画）
     currentPage.value = 1;
     resetCardState();
     remainingCards.value = [...resArr.value];
     running.value = false;
-    // 设置过渡文字并显示
-    loadingText.value = '即将揭晓结果';
-    loadingSubText.value = '准备好了吗？';
-    showLoadingAnimation.value = true;
-    setTimeout(() => {
-      showLoadingAnimation.value = false;
-      showDrawCard.value = true;
-      nextTick(() => {
-        reloadTagCanvas();
-        startCardStackAnimation();
-      });
-    }, 1000);
+    showLoadingAnimation.value = false;
+    showDrawCard.value = true;
+    nextTick(() => {
+      reloadTagCanvas();
+      startCardStackAnimation();
+    });
     return;
   } else {
     // 开始抽奖：仅计算结果，不展示堆叠卡片
