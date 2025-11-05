@@ -512,28 +512,23 @@ const startCardStackAnimation = () => {
 
 const toggle = (form) => {
   if (running.value) {
-    // 停止抽奖：不再计算结果，直接展示堆叠卡片
+    // 停止抽奖：不再计算结果，直接展示堆叠卡片（移除过渡动画）
     audioSrc.value = bgaudio;
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', speed());
 
-    // 展示悬念过渡动画（1.5秒），之后再展示首张卡片飞入
     currentPage.value = 1;
     resetCardState();
     remainingCards.value = [...resArr.value];
     running.value = false;
-    // 设置过渡文字并显示
-    loadingText.value = '即将揭晓结果';
-    loadingSubText.value = '准备好了吗？';
-    showLoadingAnimation.value = true;
-    setTimeout(() => {
-      showLoadingAnimation.value = false;
-      showDrawCard.value = true;
-      nextTick(() => {
-        reloadTagCanvas();
-        startCardStackAnimation();
-      });
-    }, 800);
+
+    // 直接显示堆叠卡片，无任何过渡动画或等待
+    showLoadingAnimation.value = false;
+    showDrawCard.value = true;
+    nextTick(() => {
+      reloadTagCanvas();
+      startCardStackAnimation();
+    });
     return;
   } else {
     // 开始抽奖：仅计算结果，不展示堆叠卡片
