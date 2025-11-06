@@ -694,9 +694,9 @@ const toggle = (form) => {
       }
       p {
           color: #ffd700; /* 金色文字，提升与红色背景的对比度 */
-          font-size: 36px; /* 原 42px，稍微减小标题字号 */
+          font-size: clamp(28px, 4.8vh, 64px); /* 自适应大字号，防止溢出裁剪 */
           font-weight: 700;
-          line-height: 44px;
+          line-height: 1.15; /* 改为比例行高，适配不同字号 */
           margin: 0;
           text-shadow: 0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.2);
         }
@@ -744,7 +744,7 @@ const toggle = (form) => {
 
 <style lang="scss">
 #resbox {
-  max-height: 90vh; /* 限制最大高度，防止滚动 */
+  max-height: 94vh; /* 稍微增高整体高度，容纳更大字号 */
   overflow: hidden; /* 禁止滚动条 */
   padding: 20px; /* 更大的留白 */
   background-color: #ff0000; /* 纯红色背景，不透明 */
@@ -754,7 +754,7 @@ const toggle = (form) => {
     display: grid;
     grid-template-columns: repeat(2, 1fr); // 两列布局
     grid-template-rows: repeat(6, 1fr); // 六行，合计 12 项
-    height: calc(90vh - 160px); // 预留标题与分页空间，防止溢出
+    height: calc(94vh - 160px); // 提高网格总高度，防止溢出裁剪
     gap: 10px; // 略微缩小间距
     justify-items: stretch;
     align-items: stretch;
@@ -774,8 +774,8 @@ const toggle = (form) => {
         height: 100%;
         padding: 12px 16px; // 缩小内边距以适配 6 行
         // 动态字号：基于视口高度按 6 行计算，尽量大但不裁切
-        font-size: clamp(24px, calc((90vh - 160px) / 6 * 0.42), 56px);
-        line-height: 1.15;
+        font-size: clamp(26px, calc((94vh - 160px) / 6 * 0.46), 60px);
+        line-height: 1.2; /* 略增行高以避免裁剪 */
         font-weight: bold;
         color: #ffd700;
         background-color: transparent;
