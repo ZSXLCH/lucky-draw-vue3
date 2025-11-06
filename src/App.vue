@@ -196,7 +196,7 @@ const animatedCards = ref([]); // 用于动画的卡片数组
 const isTopCardVisible = ref(false); // 顶部卡片是否可见
 
 // 分页相关数据
-const pageSize = 8; // 固定每页最多显示8个
+const pageSize = 12; // 固定每页最多显示12个
 const currentPage = ref(1);
 
 // 计算属性
@@ -661,7 +661,7 @@ const toggle = (form) => {
   top: 50%;
   left: 50%;
   width: 90vw; /* 视口宽度，提升自适应比例 */
-  max-width: 1400px; /* 限制最大宽度，避免超宽 */
+  max-width: 1800px; /* 放大上限，让两列更宽 */
   height: auto; /* 自适应内容高度 */
   max-height: 90vh; /* 最大高度，防止超出视口 */
   transform: translateX(-50%) translateY(-50%);
@@ -752,39 +752,52 @@ const toggle = (form) => {
   
   .grid-container {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px; /* 更大的网格间距 */
-    justify-items: center;
-    margin-bottom: 28px; /* 更大的底部留白 */
-    
+    grid-template-columns: repeat(2, 1fr); // 两列布局
+    grid-template-rows: repeat(6, 1fr); // 六行，合计 12 项
+    height: calc(90vh - 160px); // 预留标题与分页空间，防止溢出
+    gap: 10px; // 略微缩小间距
+    justify-items: stretch;
+    align-items: stretch;
+    align-content: stretch;
+    margin-bottom: 16px;
+
     .grid-item {
       width: 100%;
-      text-align: center;
-      
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+
       .result-text {
-          display: inline-block;
-          padding: 22px 28px; /* 更大的内边距 */
-          font-size: clamp(38px, 7vh, 72px); /* 自适应提升字号 */
-          font-weight: bold;
-          color: #ffd700;
-          background-color: transparent; /* 透明背景 */
-          border: 1px solid #ddd;
-          border-radius: 8px; /* 更圆润 */
-          width: 94%; /* 更宽的内容区 */
-          box-sizing: border-box;
-          cursor: pointer;
-          
-          &:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-          }
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 12px 16px; // 缩小内边距以适配 6 行
+        // 动态字号：基于视口高度按 6 行计算，尽量大但不裁切
+        font-size: clamp(24px, calc((90vh - 160px) / 6 * 0.42), 56px);
+        line-height: 1.15;
+        font-weight: bold;
+        color: #ffd700;
+        background-color: transparent;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        width: 98%;
+        box-sizing: border-box;
+        cursor: default;
+        white-space: normal; // 允许自动换行，避免裁剪
+        word-break: break-word; // 对英文或长字符进行换行
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.08);
         }
+      }
     }
   }
-  
+
   .pagination-container {
     display: flex;
     justify-content: center;
-    margin-top: 14px; /* 更大的上边距 */
+    margin-top: 8px; // 缩小上边距
   }
 }
 
