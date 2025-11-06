@@ -61,10 +61,7 @@
               'flying-out': stackingDone && i === stackedCards.length - 1 && isTopCardFlyingOut,
               'visible': card.visible
             }"
-            :style="{
-              zIndex: 100 + i,
-              boxShadow: '0 8px 32px rgba(255, 215, 0, 0.3)'
-            }"
+            :style="computeStackStyle(i, card.visible)"
             @click="(stackingDone && i === stackedCards.length - 1) ? handleTopCardClick() : null"
           >
             <div class="card-inner">
@@ -614,6 +611,22 @@ const toggle = (form) => {
     });
   }
 };
+// 为卡片堆叠增加层次感的样式计算：下层更小、稍旋转、略下移、阴影更弱
+const computeStackStyle = (i, visible) => {
+  const total = stackedCards.value.length;
+  const depth = total - 1 - i; // 顶部卡片 depth=0，越靠下 depth 越大
+  const y = depth * 18; // 每层下移 18px
+  const rot = depth * -1.5; // 每层微旋转 -1.5deg
+  const scale = Math.max(0.92, 1 - depth * 0.02); // 每层缩小 2%
+  const shadowOpacity = Math.max(0.18, 0.35 - depth * 0.05); // 越下阴影越淡
+  const blur = depth > 0 ? Math.min(depth * 0.6, 2.5) : 0; // 下层轻微虚化
+  return {
+    zIndex: 100 + i,
+    transform: `translateX(${visible ? '0' : '150%'}) translateY(${y}px) rotate(${rot}deg) scale(${scale})`,
+    boxShadow: `0 10px 40px rgba(255, 215, 0, ${shadowOpacity})`,
+    filter: depth > 0 ? `blur(${blur}px)` : 'none',
+  };
+};
 </script>
 
 <style lang="scss">
@@ -1088,4 +1101,5 @@ const toggle = (form) => {
 .fade-leave-to {
   opacity: 0;
 }
+
 </style>
