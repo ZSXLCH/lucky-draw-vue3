@@ -33,6 +33,15 @@
           ></el-input>
         </el-form-item>
 
+        <!-- 默认奖项：名驹（不可编辑名额、不可重命名/删除） -->
+        <el-form-item class="prize-item">
+          <div class="prize-label">名驹</div>
+          <span class="prize-count-label">人数：</span>
+          <el-input type="number" :min="0" :step="1" v-model="form.firstPrize" disabled></el-input>
+          <span class="prize-count-label" style="margin-left: 10px;">剩余：</span>
+          <span>{{ defaultRemain }}</span>
+        </el-form-item>
+
         <el-form-item
           v-for="(newitem, index) in storeNewLottery"
           :key="newitem.key"
@@ -140,6 +149,13 @@ const dialogVisible = computed({
 const form = computed({
   get: () => store.config,
   set: (val) => val
+});
+
+// 默认奖项剩余人数
+const defaultRemain = computed(() => {
+  const total = store.config.firstPrize || 0;
+  const arr = (store.result.firstPrize || []);
+  return total - arr.length;
 });
 
 const storeNewLottery = computed(() => store.newLottery);

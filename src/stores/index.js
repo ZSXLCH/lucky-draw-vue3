@@ -21,7 +21,8 @@ export const useLuckyStore = defineStore('lucky', {
     return {
       config: {
         name: '抽奖环节',
-        number: 70
+        number: 70,
+        firstPrize: 12
       },
       result: {},
       newLottery: [],
@@ -34,7 +35,8 @@ export const useLuckyStore = defineStore('lucky', {
     setClearConfig() {
       this.config = {
         name: '抽奖环节',
-        number: 70
+        number: 70,
+        firstPrize: 12
       };
       this.newLottery = [];
     },
@@ -62,7 +64,8 @@ export const useLuckyStore = defineStore('lucky', {
     setClearStore() {
       this.config = {
         name: '抽奖环节',
-        number: 70
+        number: 70,
+        firstPrize: 12
       };
       this.result = {};
       this.newLottery = [];
@@ -70,7 +73,12 @@ export const useLuckyStore = defineStore('lucky', {
       this.photos = [];
     },
     setConfig(config) {
-      this.config = config;
+      const next = Object.assign({}, config);
+      if (typeof next.firstPrize === 'undefined') {
+        next.firstPrize = 12;
+      }
+      this.config = next;
+      setData(configField, next);
     },
     setResult(result = {}) {
       this.result = result;

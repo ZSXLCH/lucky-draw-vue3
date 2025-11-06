@@ -67,18 +67,21 @@
             @click="handleTopCardClick()"
           >
             <div class="card-inner">
-              <!-- 正面：点击揭晓 -->
+              <!-- 正面：同组最多两人，上下各一条 类型：名字 -->
               <div class="card-front">
                 <div class="card-content">
-                  <h2>点击揭晓</h2>
-                  <p>{{ resArr.length - remainingCards.length + 1 }} / {{ resArr.length }}</p>
+                  <div class="winner-line top">
+                    {{ getWinnerInfo(remainingCards[0]?.keys?.[0])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0]?.keys?.[0])?.name || remainingCards[0]?.keys?.[0] }}
+                  </div>
+                  <div class="winner-line bottom" v-if="remainingCards[0]?.keys?.[1]">
+                    {{ getWinnerInfo(remainingCards[0]?.keys?.[1])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0]?.keys?.[1])?.name || remainingCards[0]?.keys?.[1] }}
+                  </div>
                 </div>
               </div>
-              <!-- 背面：中奖信息 -->
+              <!-- 背面：显示所属分组 -->
               <div class="card-back">
                 <div class="card-content">
-                  <p class="winner-name">{{ getWinnerInfo(remainingCards[0])?.type || '-' }}: {{ getWinnerInfo(remainingCards[0])?.name || '' }}</p>
-                  <img v-if="getWinnerInfo(remainingCards[0])?.photo" :src="getWinnerInfo(remainingCards[0]).photo" class="winner-photo" />
+                  <h2 class="group-name">{{ remainingCards[0]?.group || 'default' }}</h2>
                 </div>
               </div>
             </div>
@@ -215,6 +218,28 @@ const getWinnerInfo = (winnerKey) => {
     ...winnerInfo,
     photo: photoInfo ? photoInfo.value : ''
   };
+};
+
+// 基于分组将中奖者配对（每张卡片同组最多显示两人）
+const buildCardPairs = (winnerKeys) => {
+  const groups = {};
+  winnerKeys.forEach((k) => {
+    const info = list.value.find((d) => d.key === k) || {};
+    const g = info.group || 'default';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(k);
+  });
+  const pairs = [];
+  Object.keys(groups).forEach((g) => {
+    const arr = groups[g];
+    for (let i = 0; i < arr.length; i += 2) {
+      const k1 = arr[i];
+      const k2 = arr[i + 1];
+      const keys = [k1, k2].filter(Boolean);
+      pairs.push({ keys, group: g });
+    }
+  });
+  return pairs;
 };
 
 // 处理页码变化
@@ -454,40 +479,29 @@ const closeRes = () => {
 // 处理顶部卡片点击
 const handleTopCardClick = () => {
   if (!isTopCardFlipped.value) {
-    // 第一次点击：翻转卡片显示中奖者信息
+    // 第一次点击：翻转卡片显示所属分组
     isTopCardFlipped.value = true;
   } else {
     // 第二次点击：卡片向左飞出
     isTopCardFlyingOut.value = true;
-    
-    // 动画完成后移除顶部卡片
     setTimeout(() => {
-      // 先移除卡片
       remainingCards.value.shift();
-      // 重置状态
       isTopCardFlipped.value = false;
       isTopCardFlyingOut.value = false;
-      
-      // 检查是否还有剩余卡片
       if (remainingCards.value.length === 0) {
-        // 所有卡片都处理完了，显示完整中奖名单
         setTimeout(() => {
           showDrawCard.value = false;
           showRes.value = true;
         }, 300);
       } else {
-        // 准备下一张卡片的入场动画：先隐藏，再触发右入
         isTopCardVisible.value = false;
         nextTick(() => {
-          // 小延迟，确保DOM已更新到新顶部卡片
           setTimeout(() => {
             isTopCardVisible.value = true;
           }, 20);
         });
       }
-      // 确保下一张卡片不会自动翻转
-      // 通过Vue的响应式系统，下一张卡片会自然成为新的顶部卡片且默认不翻转
-    }, 600); // 与CSS动画时间同步
+    }, 600);
   }
 };
 
@@ -519,7 +533,7 @@ const toggle = (form) => {
 
     currentPage.value = 1;
     resetCardState();
-    remainingCards.value = [...resArr.value];
+    remainingCards.value = buildCardPairs(resArr.value);
     running.value = false;
 
     // 直接显示堆叠卡片，无任何过渡动画或等待
@@ -919,20 +933,19 @@ const toggle = (form) => {
   /* 只在添加flipped类时才有过渡效果 */
 }
 
-/* 只有在明确添加flipped类时才翻转 */
+/* 只有在明确添加flipped类时才翻转到正面 */
 .stacked-card.flipped .card-inner {
-  transform: rotateY(180deg);
+  transform: rotateY(0deg);
   transition: transform 0.6s;
 }
 
-/* 默认状态不翻转 */
+/* 默认状态显示背面 */
 .card-inner {
-  transform: rotateY(0deg);
+  transform: rotateY(180deg);
 }
 
-/* 飞出动画时保持翻转状态 */
+/* 飞出动画时保持当前朝向，不强制调整 */
 .stacked-card.flying-out .card-inner {
-  transform: rotateY(180deg);
   transition: transform 0.6s;
 }
 
@@ -990,19 +1003,40 @@ const toggle = (form) => {
 }
 
 .card-front .card-content h2 {
-  font-size: 96px; /* 增大“点击揭晓”标题 */
-  margin-bottom: 20px;
-  color: #ffd700;
-  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
+  /* 移除“点击揭晓”样式用途，保留默认不再使用 */
+  display: none;
 }
 
 .card-front .card-content p {
-  font-size: 54px; /* 增大进度“1/10”等文字 */
-  opacity: 0.9;
-  color: #ffd700;
-  text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+  /* 移除进度样式用途，保留默认不再使用 */
+  display: none;
 }
 
+/* 卡片正面两行中奖人信息 */
+.winner-line {
+  font-size: min(24vh, 110px);
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+}
+.winner-line.top {
+  margin-bottom: 20px;
+}
+.winner-line.bottom {
+  margin-top: 10px;
+}
+
+/* 卡片背面分组名 */
+.group-name {
+  font-size: min(28vh, 120px);
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
+}
 .winner-name {
   font-size: min(30vh, 140px); /* 从 min(28vh, 130px) 略微增大 */
   font-weight: bold;

@@ -347,9 +347,45 @@ const startHandler = () => {
       Object.assign({}, form.value, { remain: remain.value })
     );
   } else {
-    // 开始抽奖时，不需要传递form参数
-    emit('toggle');
-    showSetwat.value = true;
+    // 直接使用固定的“名驹”奖项进行抽奖，不弹出选项窗口
+    form.value.category = 'firstPrize';
+    form.value.mode = 0; // 一次性抽完该奖项剩余名额
+    form.value.allin = true; // 全员参与（不排除已中奖）
+    form.value.groupDraw = true; // 分组抽奖开启
+
+    // 抽奖条件校验：名额剩余
+    const total = (config.value.firstPrize || 0);
+    const arr = (result.value.firstPrize || []);
+    const remainCount = total - arr.length;
+    if (remainCount <= 0) {
+      ElMessage.error('该奖项剩余人数不足');
+      return;
+    }
+
+    // 抽奖条件校验：分组条件（至少两个分组且每组有人）
+    const groups = new Map();
+    (store.list || []).forEach(item => {
+      const g = item.group || 'default';
+      groups.set(g, (groups.get(g) || 0) + 1);
+    });
+    const groupNames = Array.from(groups.keys());
+    const validGroups = groupNames.filter(name => (groups.get(name) || 0) > 0);
+    if (validGroups.length < 2) {
+      ElMessage.error('分组抽奖需至少存在两个分组且各有成员');
+      return;
+    }
+
+    // 如果未导入名单但开启了分组抽奖，提醒默认分组
+    if (form.value.groupDraw && (!store.list || store.list.length === 0)) {
+      ElMessage.warning('未导入名单，所有人员将默认分配到"default"分组');
+    }
+
+    // 直接触发抽奖，传递 remain
+    emit(
+      'toggle',
+      Object.assign({}, form.value, { remain: remain.value })
+    );
+    showSetwat.value = false;
   }
 };
 
