@@ -50,38 +50,39 @@
     <transition name="fade">
       <div v-show="showDrawCard" id="stackedCardContainer">
         <div class="card-stack">
-          <!-- 只渲染顶部卡片，确保状态控制精确 -->
+          <!-- 渲染整叠卡片：按序右入，最后一张为顶部卡片 -->
           <div 
-            v-if="remainingCards.length > 0"
-            class="stacked-card active"
+            v-for="(card, i) in stackedCards"
+            :key="i"
+            class="stacked-card"
             :class="{
-              'flipped': isTopCardFlipped,
-              'flying-out': isTopCardFlyingOut,
-              'visible': isTopCardVisible
+              'active': stackingDone && i === stackedCards.length - 1,
+              'flipped': stackingDone && i === stackedCards.length - 1 && isTopCardFlipped,
+              'flying-out': stackingDone && i === stackedCards.length - 1 && isTopCardFlyingOut,
+              'visible': card.visible
             }"
             :style="{
-              zIndex: 1000,
-              transform: '',
+              zIndex: 100 + i,
               boxShadow: '0 8px 32px rgba(255, 215, 0, 0.3)'
             }"
-            @click="handleTopCardClick()"
+            @click="(stackingDone && i === stackedCards.length - 1) ? handleTopCardClick() : null"
           >
             <div class="card-inner">
               <!-- 正面：同组最多两人，上下各一条 类型：名字 -->
               <div class="card-front">
                 <div class="card-content">
                   <div class="winner-line top">
-                    {{ getWinnerInfo(remainingCards[0]?.keys?.[0])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0]?.keys?.[0])?.name || remainingCards[0]?.keys?.[0] }}
+                    {{ getWinnerInfo(card?.keys?.[0])?.type || '-' }}：{{ getWinnerInfo(card?.keys?.[0])?.name || card?.keys?.[0] }}
                   </div>
-                  <div class="winner-line bottom" v-if="remainingCards[0]?.keys?.[1]">
-                    {{ getWinnerInfo(remainingCards[0]?.keys?.[1])?.type || '-' }}：{{ getWinnerInfo(remainingCards[0]?.keys?.[1])?.name || remainingCards[0]?.keys?.[1] }}
+                  <div class="winner-line bottom" v-if="card?.keys?.[1]">
+                    {{ getWinnerInfo(card?.keys?.[1])?.type || '-' }}：{{ getWinnerInfo(card?.keys?.[1])?.name || card?.keys?.[1] }}
                   </div>
                 </div>
               </div>
               <!-- 背面：显示所属分组 -->
               <div class="card-back">
                 <div class="card-content">
-                  <h2 class="group-name">{{ remainingCards[0]?.group || 'default' }}</h2>
+                  <h2 class="group-name">{{ card?.group || 'default' }}</h2>
                 </div>
               </div>
             </div>
@@ -191,12 +192,14 @@ const loadingTexts = [
 
 // 堆叠卡片相关状态
 const showDrawCard = ref(false);
-const remainingCards = ref([]); // 剩余的卡片数组
+// const remainingCards = ref([]); // 改为使用 stackedCards
 const isTopCardFlipped = ref(false);
 const isTopCardFlyingOut = ref(false);
 const cardStackAnimation = ref(false); // 卡片堆叠动画状态
-const animatedCards = ref([]); // 用于动画的卡片数组
-const isTopCardVisible = ref(false); // 顶部卡片是否可见
+// const animatedCards = ref([]); // 不再单独使用
+// const isTopCardVisible = ref(false); // 顶部卡片是否可见（移除统一控制）
+const stackedCards = ref([]); // 整叠卡片：包含可见标记
+const stackingDone = ref(false); // 堆叠是否完成，完成后才允许交互
 
 // 分页相关数据
 const pageSize = 12; // 固定每页最多显示12个
@@ -478,6 +481,7 @@ const closeRes = () => {
 
 // 处理顶部卡片点击
 const handleTopCardClick = () => {
+  if (!stackingDone.value) return; // 堆叠未完成不允许交互
   if (!isTopCardFlipped.value) {
     // 第一次点击：翻转卡片显示所属分组
     isTopCardFlipped.value = true;
@@ -485,21 +489,15 @@ const handleTopCardClick = () => {
     // 第二次点击：卡片向左飞出
     isTopCardFlyingOut.value = true;
     setTimeout(() => {
-      remainingCards.value.shift();
+      // 移除顶部卡片
+      stackedCards.value.pop();
       isTopCardFlipped.value = false;
       isTopCardFlyingOut.value = false;
-      if (remainingCards.value.length === 0) {
+      if (stackedCards.value.length === 0) {
         setTimeout(() => {
           showDrawCard.value = false;
           showRes.value = true;
         }, 300);
-      } else {
-        isTopCardVisible.value = false;
-        nextTick(() => {
-          setTimeout(() => {
-            isTopCardVisible.value = true;
-          }, 20);
-        });
       }
     }, 600);
   }
@@ -508,35 +506,54 @@ const handleTopCardClick = () => {
 // 重置卡片状态
 const resetCardState = () => {
   showDrawCard.value = false;
-  remainingCards.value = [];
-  animatedCards.value = [];
+  // remainingCards.value = [];
+  // animatedCards.value = [];
+  stackedCards.value = [];
   isTopCardFlipped.value = false;
   isTopCardFlyingOut.value = false;
   cardStackAnimation.value = false;
+  stackingDone.value = false;
 };
 
 // 开始卡片入场动画（单卡顺序右入）
 const startCardStackAnimation = () => {
-  // 只控制顶部卡片的可见性，从右侧飞入
-  isTopCardVisible.value = false;
-  nextTick(() => {
-    isTopCardVisible.value = true;
-  });
+  stackingDone.value = false;
+  // 依次设置卡片为可见，触发从右侧飞入动画
+  let i = 0;
+  const animateNext = () => {
+    if (i < stackedCards.value.length) {
+      // 保证初始为不可见状态
+      stackedCards.value[i].visible = false;
+      nextTick(() => {
+        // 轻微延时以触发过渡
+        setTimeout(() => {
+          stackedCards.value[i].visible = true;
+          i++;
+          setTimeout(animateNext, 180);
+        }, 20);
+      });
+    } else {
+      stackingDone.value = true;
+    }
+  };
+  animateNext();
 };
 
 const toggle = (form) => {
   if (running.value) {
-    // 停止抽奖：不再计算结果，直接展示堆叠卡片（移除过渡动画）
+    // 停止抽奖：不再计算结果，直接展示堆叠卡片
     audioSrc.value = bgaudio;
     loadAudio();
     window.TagCanvas.SetSpeed('rootcanvas', speed());
 
     currentPage.value = 1;
     resetCardState();
-    remainingCards.value = buildCardPairs(resArr.value);
+    const pairs = buildCardPairs(resArr.value);
+    // 初始化整叠卡片对象，默认不可见，等待按序入场
+    const orderedPairs = pairs.slice().reverse();
+    stackedCards.value = orderedPairs.map((c) => ({ ...c, visible: false }));
     running.value = false;
 
-    // 直接显示堆叠卡片，无任何过渡动画或等待
     showLoadingAnimation.value = false;
     showDrawCard.value = true;
     nextTick(() => {
@@ -586,7 +603,7 @@ const toggle = (form) => {
     });
     result.value = data;
 
-    // 不展示堆叠卡片，等待停止时再展示
+    // 等停止时再展示堆叠卡片
     currentPage.value = 1;
     showLoadingAnimation.value = false;
     showDrawCard.value = false;
