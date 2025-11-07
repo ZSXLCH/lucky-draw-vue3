@@ -1044,7 +1044,7 @@ const computeStackStyle = (i, visible) => {
 
 /* 卡片正面两行中奖人信息 */
 .winner-line {
-  font-size: min(24vh, 110px);
+  font-size: min(30vh, 140px);
   font-weight: bold;
   color: #ffd700;
   text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
@@ -1062,13 +1062,13 @@ const computeStackStyle = (i, visible) => {
 
 /* 卡片背面分组名 */
 .group-name {
-  font-size: min(28vh, 120px);
+  font-size: min(36vh, 160px);
   font-weight: bold;
   color: #ffd700;
   text-shadow: 0 0 3px rgba(255, 215, 0, 0.35), 0 0 6px rgba(255, 215, 0, 0.2);
 }
 .winner-name {
-  font-size: min(30vh, 140px); /* 从 min(28vh, 130px) 略微增大 */
+  font-size: min(30vh, 140px);
   font-weight: bold;
   margin-bottom: 20px;
   color: #ffd700;
