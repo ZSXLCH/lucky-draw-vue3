@@ -51,57 +51,111 @@ export function luckydrawHandler(total, won = [], num, allin = false, groupDraw 
       wons.push(current);
     }
   } else {
-    // 分组抽奖逻辑
-    // 1. 按分组统计人员
+    // 分组抽奖逻辑（增强：尽量保证同组内类型不重复）
+    // 1. 按分组统计有效候选人（过滤已中奖且非全员参与）
     const groups = {};
     list.forEach(item => {
       const groupName = item.group || 'default';
-      if (!groups[groupName]) {
-        groups[groupName] = [];
-      }
-      // 添加人员ID到对应分组
-      if (peolist.includes(item.key)) {
-        // 检查是否已中奖且不是全员参与
-        if (allin || !wons.includes(item.key)) {
-          groups[groupName].push(item.key);
-        }
-      }
+      const keyNum = typeof item.key === 'number' ? item.key : Number(item.key);
+      if (!peolist.includes(keyNum)) return;
+      if (!allin && wons.includes(keyNum)) return;
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push({ key: keyNum, type: item.type ?? null });
     });
     
-    // 2. 计算每组抽取人数
     const groupKeys = Object.keys(groups);
-    const avgPerGroup = Math.floor(num / groupKeys.length);
-    const remainder = num % groupKeys.length;
-    
-    // 3. 从每个分组中抽取平均人数
-    groupKeys.forEach(groupName => {
-      const groupMembers = groups[groupName];
-      if (groupMembers.length > 0) {
-        // 打乱数组以确保随机性
-        const shuffled = [...groupMembers].sort(() => Math.random() - 0.5);
-        // 抽取平均人数（但不超过该组实际人数）
-        const takeCount = Math.min(avgPerGroup, shuffled.length);
-        const selected = shuffled.slice(0, takeCount);
-        
-        // 添加到结果并更新已中奖列表
-        res.push(...selected);
-        selected.forEach(id => {
-          wons.push(id);
-        });
+    if (groupKeys.length === 0) {
+      // 无有效分组候选，退回到非分组逻辑
+      for (let j = 0; j < num; j++) {
+        const nodraws = allin ? peolist : peolist.filter(item => !wons.includes(item));
+        if (nodraws.length === 0) break;
+        const current = nodraws[randomNum(1, nodraws.length) - 1];
+        res.push(current);
+        wons.push(current);
       }
-    });
-    
-    // 4. 如果分组抽取后还不够，从全体未中奖人员中抽取剩余人数
-    if (res.length < num) {
-      const allAvailable = allin ? peolist : peolist.filter(item => !wons.includes(item));
-      while (res.length < num && allAvailable.length > 0) {
-        const selected = allAvailable[randomNum(1, allAvailable.length) - 1];
-        res.push(selected);
-        const index = allAvailable.indexOf(selected);
-        if (index > -1) {
-          allAvailable.splice(index, 1);
+      return res;
+    }
+
+    // 2. 计算每组基础抽取人数，并分配余数（尽量均匀）
+    const basePerGroup = Math.floor(num / groupKeys.length);
+    let remainder = num % groupKeys.length;
+
+    // 3. 每组选择：优先选择类型不重复的候选
+    const selectedTypesByGroup = {}; // { group: Set(types) }
+    groupKeys.forEach((groupName, idx) => {
+      const candidates = groups[groupName];
+      if (!candidates || candidates.length === 0) return;
+      const takeCount = Math.min(basePerGroup + (remainder > 0 ? 1 : 0), candidates.length);
+      if (remainder > 0) remainder--;
+
+      // 打乱候选，保证随机性
+      const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+      const picked = [];
+      const usedTypes = new Set();
+
+      // 第一轮：按类型去重选取
+      for (const c of shuffled) {
+        const t = c.type ?? '__NULL_TYPE__';
+        if (!usedTypes.has(t)) {
+          picked.push(c);
+          usedTypes.add(t);
+          if (picked.length >= takeCount) break;
         }
-        wons.push(selected);
+      }
+      // 第二轮：如果不足，再补全（允许类型重复）
+      if (picked.length < takeCount) {
+        for (const c of shuffled) {
+          if (picked.find(p => p.key === c.key)) continue;
+          picked.push(c);
+          if (picked.length >= takeCount) break;
+        }
+      }
+
+      if (!selectedTypesByGroup[groupName]) selectedTypesByGroup[groupName] = new Set();
+      picked.forEach(p => {
+        res.push(p.key);
+        wons.push(p.key);
+        selectedTypesByGroup[groupName].add(p.type ?? '__NULL_TYPE__');
+      });
+    });
+
+    // 4. 若还未达到目标数量，再全体补充：仍尽量避免同组类型重复
+    if (res.length < num) {
+      const allAvailableKeys = allin ? peolist : peolist.filter(item => !wons.includes(item));
+      if (allAvailableKeys.length > 0) {
+        // 将可用键映射为包含类型与分组的对象
+        const availableCandidates = [];
+        const byKey = new Map(list.map(it => [typeof it.key === 'number' ? it.key : Number(it.key), it]));
+        for (const k of allAvailableKeys) {
+          const info = byKey.get(k);
+          if (!info) continue;
+          availableCandidates.push({ key: k, group: info.group || 'default', type: info.type ?? null });
+        }
+        // 打乱
+        const shuffledAvail = availableCandidates.sort(() => Math.random() - 0.5);
+
+        // 优先挑选不会造成同组类型重复的
+        for (const c of shuffledAvail) {
+          if (res.length >= num) break;
+          const g = c.group;
+          const t = c.type ?? '__NULL_TYPE__';
+          const used = selectedTypesByGroup[g] || new Set();
+          if (!used.has(t)) {
+            res.push(c.key);
+            wons.push(c.key);
+            used.add(t);
+            selectedTypesByGroup[g] = used;
+          }
+        }
+        // 如果仍不足，允许重复类型补齐
+        if (res.length < num) {
+          for (const c of shuffledAvail) {
+            if (res.length >= num) break;
+            if (wons.includes(c.key)) continue; // 可能已在前一步选中
+            res.push(c.key);
+            wons.push(c.key);
+          }
+        }
       }
     }
   }
